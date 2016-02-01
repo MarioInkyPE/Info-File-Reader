@@ -16,6 +16,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	PanelLol(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -100,6 +101,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+   
+
    if (!hWnd)
    {
       return FALSE;
@@ -125,12 +128,70 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+	case WM_CREATE:
+		{
+			HWND poopBox = CreateDialog(hInst, MAKEINTRESOURCE(IDD_FORMVIEW), hWnd, PanelLol);
+			
+			if (!poopBox)
+			{
+				MessageBox(hWnd, L"Failed to go", L"Poo Poo", MB_OK);
+			}
+			
+		}
+		break;
+	case WM_SIZE:
+	{
+		HWND hEdit;
+		RECT rcClient;
+
+		GetClientRect(hWnd, &rcClient);
+
+		hEdit = GetDlgItem(hWnd, IDD_FORMVIEW);
+		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right, rcClient.bottom, SWP_NOZORDER);
+	}
+		break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
             // Parse the menu selections:
             switch (wmId)
             {
+			case IDM_FILE_OPEN: {
+
+
+				OPENFILENAME ofn;       // common dialog box structure
+				char szFile[260];       // buffer for file name
+				HANDLE hf;              // file handle
+
+										// Initialize OPENFILENAME
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hWnd;
+				ofn.lpstrFile = (LPWSTR)szFile;
+				// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+				// use the contents of szFile to initialize itself.
+				ofn.lpstrFile[0] = '\0';
+				ofn.nMaxFile = sizeof(szFile);
+				ofn.lpstrFilter = L"Info Files\0*info;*table;telesa\0All\0*.*\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFileTitle = NULL;
+				ofn.nMaxFileTitle = 0;
+				ofn.lpstrInitialDir = NULL;
+				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+				// Display the Open dialog box. 
+				if (GetOpenFileName(&ofn) == TRUE)
+				{
+					hf = CreateFile(ofn.lpstrFile,
+						GENERIC_READ,
+						0,
+						(LPSECURITY_ATTRIBUTES)NULL,
+						OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL,
+						(HANDLE)NULL);
+				}
+			}
+				break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -177,4 +238,27 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+	case WM_SIZE:
+	{
+		
+	}
+		break;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
 }
