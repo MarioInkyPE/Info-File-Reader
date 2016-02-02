@@ -20,6 +20,8 @@ HWND				CreateListView(HWND);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	PanelLol(HWND, UINT, WPARAM, LPARAM);
+void				HandleWM_NOTIFY(LPARAM);
+BOOL InsertListViewItems(HWND, int);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -134,7 +136,7 @@ HWND CreateListView(HWND hwndParent, HMENU menu)
 	// Create the list-view window in report view with label editing enabled.
 	HWND hWndListView = CreateWindow(WC_LISTVIEW,
 		L"",
-		WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
+		WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
 		0, 0,
 		rcClient.right - rcClient.left,
 		rcClient.bottom - rcClient.top,
@@ -216,6 +218,63 @@ BOOL InsertListViewItems(HWND hWndListView, int cItems)
 
 	return TRUE;
 }
+
+struct PETINFO
+{
+	TCHAR szKind[10];
+	TCHAR szBreed[50];
+	TCHAR szPrice[20];
+};
+
+PETINFO rgPetInfo[5] =
+{
+	{ TEXT("Dog"),  TEXT("Poodle"),     TEXT("$300.00") },
+	{ TEXT("Cat"),  TEXT("Siamese"),    TEXT("$100.00") },
+	{ TEXT("Fish"), TEXT("Angel Fish"), TEXT("$10.00") },
+	{ TEXT("Bird"), TEXT("Parakeet"),   TEXT("$5.00") },
+	{ TEXT("Toad"), TEXT("Woodhouse"),  TEXT("$0.25") },
+};
+
+void HandleWM_NOTIFY(LPARAM lParam)
+{
+	NMLVDISPINFO* plvdi;
+
+	switch (((LPNMHDR)lParam)->code)
+	{
+	case LVN_GETDISPINFO:
+
+		plvdi = (NMLVDISPINFO*)lParam;
+
+		switch (plvdi->item.iSubItem)
+		{
+		case 0:
+			plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szKind;
+			break;
+
+		case 1:
+			plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szBreed;
+			break;
+
+		case 2:
+			plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szPrice;
+			break;
+
+		default:
+			break;
+		}
+
+		break;
+
+	}
+	// NOTE: In addition to setting pszText to point to the item text, you could 
+	// copy the item text into pszText using StringCchCopy. For example:
+	//
+	// StringCchCopy(plvdi->item.pszText, 
+	//                         plvdi->item.cchTextMax, 
+	//                         rgPetInfo[plvdi->item.iItem].szKind);
+
+	return;
+}
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -237,6 +296,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			std::vector<LPWSTR> Bloxxer2Columns;
 			Bloxxer2Columns.push_back(L"Property Name");
 			Bloxxer2Columns.push_back(L"Property Value");
+			Bloxxer2Columns.push_back(L"Poo Poos");
 
 			RECT rcClient;
 			GetClientRect(hWnd, &rcClient);
@@ -245,7 +305,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			HWND Bloxxer2 = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW12);
 			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
 			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
-
+			InsertListViewItems(Bloxxer2, 5);
+			
 			HWND hwndButton = CreateWindow(
 				L"BUTTON",  // Predefined class; Unicode assumed 
 				L"OK",      // Button text 
@@ -285,6 +346,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
 		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
 		SetWindowPos(Button1Thing, NULL, 10, (rcClient.bottom / 3) * 2 + 10, 100, 50, SWP_NOZORDER);
+
+		
 	}
 		break;
     case WM_COMMAND:
@@ -351,6 +414,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+	case WM_NOTIFY:
+		switch (((LPNMHDR)lParam)->code)
+		{
+		case LVN_GETDISPINFO:
+		{
+			NMLVDISPINFO* plvdi = (NMLVDISPINFO*)lParam;
+			switch (plvdi->item.iSubItem)
+			{
+			case 0:
+				// rgPetInfo is an array of PETINFO structures.
+				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szKind;
+				break;
+
+			case 1:
+				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szBreed;
+				break;
+			case 2:
+				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szPrice;
+				break;
+
+			default:
+				break;
+			}
+			return TRUE;
+		}
+		// More notifications...
+		}
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -443,3 +534,7 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return (INT_PTR)FALSE;
 }
+
+
+
+
