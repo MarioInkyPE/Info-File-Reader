@@ -3,6 +3,8 @@
 
 #include "stdafx.h"
 #include "iNfoFR.h"
+#include <commctrl.h>
+#include <vector>
 
 #define MAX_LOADSTRING 100
 
@@ -14,6 +16,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
+HWND				CreateListView(HWND);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	PanelLol(HWND, UINT, WPARAM, LPARAM);
@@ -114,6 +117,105 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+#define IDC_MAIN_LISTVIEW11 1472
+#define IDC_MAIN_LISTVIEW12 1473
+#define IDC_MAIN_BUTTON1 1474
+
+HWND CreateListView(HWND hwndParent, HMENU menu)
+{
+	INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+	icex.dwICC = ICC_LISTVIEW_CLASSES;
+	InitCommonControlsEx(&icex);
+
+	RECT rcClient;                       // The parent window's client area.
+
+	GetClientRect(hwndParent, &rcClient);
+
+	// Create the list-view window in report view with label editing enabled.
+	HWND hWndListView = CreateWindow(WC_LISTVIEW,
+		L"",
+		WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
+		0, 0,
+		rcClient.right - rcClient.left,
+		rcClient.bottom - rcClient.top,
+		hwndParent,
+		menu,
+		hInst,
+		NULL);
+
+	return (hWndListView);
+}
+
+
+#define C_COLUMNS 2
+// InitListViewColumns: Adds columns to a list-view control.
+// hWndListView:        Handle to the list-view control. 
+// Returns TRUE if successful, and FALSE otherwise. 
+BOOL InitListViewColumns(HWND hWndListView, std::vector<LPWSTR> stringList)
+{
+	WCHAR szText[256];     // Temporary buffer.
+	LVCOLUMN lvc;
+	int iCol;
+
+	// Initialize the LVCOLUMN structure.
+	// The mask specifies that the format, width, text,
+	// and subitem members of the structure are valid.
+	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+
+	// Add the columns.
+	for (iCol = 0; iCol < stringList.size(); iCol++)
+	{
+		lvc.iSubItem = iCol;
+		lvc.pszText = stringList[iCol];
+		lvc.cx = 100;               // Width of column in pixels.
+
+		if (iCol < 2)
+			lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
+		else
+			lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
+
+									// Load the names of the column headings from the string resources.
+		//LoadString(hInst,
+		//	IDS_FIRST_POOPOO + iCol,
+		//	szText,
+		//	sizeof(szText) / sizeof(szText[0]));
+
+		// Insert the columns into the list view.
+		if (ListView_InsertColumn(hWndListView, iCol, &lvc) == -1)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+// InsertListViewItems: Inserts items into a list view. 
+// hWndListView:        Handle to the list-view control.
+// cItems:              Number of items to insert.
+// Returns TRUE if successful, and FALSE otherwise.
+BOOL InsertListViewItems(HWND hWndListView, int cItems)
+{
+	LVITEM lvI;
+
+	// Initialize LVITEM members that are common to all items.
+	lvI.pszText = LPSTR_TEXTCALLBACK; // Sends an LVN_GETDISPINFO message.
+	lvI.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE;
+	lvI.stateMask = 0;
+	lvI.iSubItem = 0;
+	lvI.state = 0;
+
+	// Initialize LVITEM members that are different for each item.
+	for (int index = 0; index < cItems; index++)
+	{
+		lvI.iItem = index;
+		lvI.iImage = index;
+
+		// Insert items into the list.
+		if (ListView_InsertItem(hWndListView, &lvI) == -1)
+			return FALSE;
+	}
+
+	return TRUE;
+}
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -130,24 +232,59 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
 	case WM_CREATE:
 		{
-			HWND poopBox = CreateDialog(hInst, MAKEINTRESOURCE(IDD_FORMVIEW), hWnd, PanelLol);
+			std::vector<LPWSTR> Bloxxer1Columns;
+			Bloxxer1Columns.push_back(L"Item #");
+			std::vector<LPWSTR> Bloxxer2Columns;
+			Bloxxer2Columns.push_back(L"Property Name");
+			Bloxxer2Columns.push_back(L"Property Value");
+
+			RECT rcClient;
+			GetClientRect(hWnd, &rcClient);
+
+			HWND Bloxxer = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW11);
+			HWND Bloxxer2 = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW12);
+			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
+			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
+
+			HWND hwndButton = CreateWindow(
+				L"BUTTON",  // Predefined class; Unicode assumed 
+				L"OK",      // Button text 
+				WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+				10,         // x position 
+				(rcClient.bottom / 3) * 2 + 10,         // y position 
+				100,        // Button width
+				50,        // Button height
+				hWnd,     // Parent window
+				(HMENU)IDC_MAIN_BUTTON1,       // No menu.
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);      // Pointer not needed.
+
+			//HWND poopBox = CreateDialog(hInst, MAKEINTRESOURCE(IDD_FORMVIEW), hWnd, PanelLol);
+			InitListViewColumns(Bloxxer, Bloxxer1Columns);
+			InitListViewColumns(Bloxxer2, Bloxxer2Columns);
+
 			
-			if (!poopBox)
+			//if (!poopBox)
 			{
-				MessageBox(hWnd, L"Failed to go", L"Poo Poo", MB_OK);
+				//MessageBox(hWnd, L"Failed to go", L"Poo Poo", MB_OK);
 			}
 			
 		}
 		break;
 	case WM_SIZE:
 	{
-		HWND hEdit;
+		HWND hEdit, Bloxxer2, Button1Thing;
 		RECT rcClient;
 
 		GetClientRect(hWnd, &rcClient);
 
-		hEdit = GetDlgItem(hWnd, IDD_FORMVIEW);
-		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right, rcClient.bottom, SWP_NOZORDER);
+		hEdit = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+		Bloxxer2 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+		Button1Thing = GetDlgItem(hWnd, IDC_MAIN_BUTTON1);
+
+		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
+		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
+		SetWindowPos(Button1Thing, NULL, 10, (rcClient.bottom / 3) * 2 + 10, 100, 50, SWP_NOZORDER);
 	}
 		break;
     case WM_COMMAND:
@@ -249,16 +386,60 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		return (INT_PTR)TRUE;
 	case WM_SIZE:
 	{
-		
+		HWND hEdit;
+		RECT rcClient;
+
+		GetClientRect(hDlg, &rcClient);
+
+		hEdit = GetDlgItem(hDlg, IDD_FORMVIEW);
+		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right, rcClient.bottom, SWP_NOZORDER);
 	}
 		break;
 	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
 		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
+			case IDOK || IDCANCEL:
+			{
+				EndDialog(hDlg, LOWORD(wParam));
+				return (INT_PTR)TRUE;
+				break;
+			}
+			case IDC_BUTTON_APPLY:
+			{
+				break;
+			}
+			case IDC_BUTTON_ADD_ITEM:
+			{
+				break;
+			}
+			case IDC_BUTTON_RESET:
+			{
+				break;
+			}
+			case IDC_BUTTON_COPY_ITEM:
+			{
+				break;
+			}
+			case IDC_BUTTON_REMOVE_ITEM:
+			{
+				break;
+			}
+			case IDM_ABOUT:
+			{
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hDlg, About);
+				break;
+			}
+			case IDM_EXIT:
+				EndDialog(hDlg, LOWORD(wParam));
+				return (INT_PTR)TRUE;
+			break;
+
+
 		}
-		break;
+	
+		
 	}
 	return (INT_PTR)FALSE;
 }
