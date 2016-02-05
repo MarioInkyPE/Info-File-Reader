@@ -5,6 +5,7 @@
 #include "iNfoFR.h"
 #include <commctrl.h>
 #include <vector>
+#include "readFile.h"
 
 #define MAX_LOADSTRING 100
 
@@ -123,6 +124,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define IDC_MAIN_LISTVIEW12 1473
 #define IDC_MAIN_BUTTON1 1474
 
+int peoplesPoo = 0;
+
 HWND CreateListView(HWND hwndParent, HMENU menu)
 {
 	INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
@@ -136,7 +139,7 @@ HWND CreateListView(HWND hwndParent, HMENU menu)
 	// Create the list-view window in report view with label editing enabled.
 	HWND hWndListView = CreateWindow(WC_LISTVIEW,
 		L"",
-		WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+		WS_CHILD | LVS_REPORT | WS_VISIBLE | WS_BORDER | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
 		0, 0,
 		rcClient.right - rcClient.left,
 		rcClient.bottom - rcClient.top,
@@ -144,6 +147,8 @@ HWND CreateListView(HWND hwndParent, HMENU menu)
 		menu,
 		hInst,
 		NULL);
+	SetWindowTheme(hWndListView, L"Explorer", NULL);
+	
 
 	return (hWndListView);
 }
@@ -155,7 +160,7 @@ HWND CreateListView(HWND hwndParent, HMENU menu)
 // Returns TRUE if successful, and FALSE otherwise. 
 BOOL InitListViewColumns(HWND hWndListView, std::vector<LPWSTR> stringList)
 {
-	WCHAR szText[256];     // Temporary buffer.
+	//WCHAR szText[256];     // Temporary buffer.
 	LVCOLUMN lvc;
 	int iCol;
 
@@ -165,7 +170,7 @@ BOOL InitListViewColumns(HWND hWndListView, std::vector<LPWSTR> stringList)
 	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 
 	// Add the columns.
-	for (iCol = 0; iCol < stringList.size(); iCol++)
+	for (iCol = 0; iCol < (int)stringList.size(); iCol++)
 	{
 		lvc.iSubItem = iCol;
 		lvc.pszText = stringList[iCol];
@@ -213,26 +218,54 @@ BOOL InsertListViewItems(HWND hWndListView, int cItems)
 
 		// Insert items into the list.
 		if (ListView_InsertItem(hWndListView, &lvI) == -1)
+		{
+			//peoplesPoo = -1;
 			return FALSE;
+		}
 	}
-
+	//peoplesPoo = -1;
 	return TRUE;
 }
 
+IFWhole OpenedFile;
+
 struct PETINFO
 {
-	TCHAR szKind[10];
+	TCHAR szKind[30];
 	TCHAR szBreed[50];
 	TCHAR szPrice[20];
 };
 
+struct ENTRYLISTINFO {
+	TCHAR szNumber[20];
+	TCHAR szFirstValue[32];
+	TCHAR szSecondValue[32];
+	TCHAR szThirdValue[32];
+};
+
+struct PROPERTYLISTINFO {
+	TCHAR szID[20];
+	TCHAR szValue[32];
+	TCHAR szType[10];
+};
+
+std::vector<ENTRYLISTINFO> EntrysList;
+std::vector<PROPERTYLISTINFO> PropertiesList;
+
+
 PETINFO rgPetInfo[5] =
 {
-	{ TEXT("Dog"),  TEXT("Poodle"),     TEXT("$300.00") },
-	{ TEXT("Cat"),  TEXT("Siamese"),    TEXT("$100.00") },
-	{ TEXT("Fish"), TEXT("Angel Fish"), TEXT("$10.00") },
-	{ TEXT("Bird"), TEXT("Parakeet"),   TEXT("$5.00") },
-	{ TEXT("Toad"), TEXT("Woodhouse"),  TEXT("$0.25") },
+	{ TEXT("Position X"),  TEXT("40.00000"),     TEXT("76843") },
+	{ TEXT("Position Y"),  TEXT("50.00000"),    TEXT("7331") },
+	{ TEXT("Position Z"), TEXT("-10.00000"), TEXT("13336") },
+	{ TEXT("Name"), TEXT("mkiniko"),   TEXT("13337") },
+	{ TEXT("Room #"), TEXT("37"),  TEXT("50000") },
+};
+
+
+struct PoopInfo {
+	TCHAR szKids[30];
+	TCHAR szString[20];
 };
 
 void HandleWM_NOTIFY(LPARAM lParam)
@@ -275,6 +308,71 @@ void HandleWM_NOTIFY(LPARAM lParam)
 
 	return;
 }
+
+void changePropList(int item) {
+	PropertiesList.clear();
+	for (int i = 0; i < (int)OpenedFile.header.NumberOfProperties; ++i) {
+		PROPERTYLISTINFO theInfo;
+		IFPropertyValue currentProp = OpenedFile.ItemsLolz[item].TheProperties[i];
+		_stprintf_s(theInfo.szID, L"%u", currentProp.ValueID);
+		_stprintf_s(theInfo.szType, _T("%hs"), currentProp.valueType.c_str());
+		if (currentProp.valueType == "s32") {
+			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.InfoString);
+		}
+		else if(currentProp.valueType == "s16") {
+			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.TableString);
+		}
+		else if (currentProp.valueType == "f4") {
+			_stprintf_s(theInfo.szValue, _T("%f"), currentProp.FloatLol);
+		}
+		else if (currentProp.valueType == "i4") {
+			_stprintf_s(theInfo.szValue, _T("%u"), currentProp.IntegerLol);
+		}
+
+		PropertiesList.push_back(theInfo);
+		
+	}
+	peoplesPoo = 2;
+}
+
+void changeEntryList() {
+	EntrysList.clear();
+	for (int i = 0; i < (int)OpenedFile.header.NumberOfItems; ++i) {
+		ENTRYLISTINFO theInfo;
+		IFItem currentEnt = OpenedFile.ItemsLolz[i];
+		_stprintf_s(theInfo.szNumber, L"%d", i);
+		for (int j = 0; j < 3 && j < (int)OpenedFile.header.NumberOfProperties; ++j) {
+			TCHAR canada[32];
+			IFPropertyValue checkSam = currentEnt.TheProperties[j];
+			if (checkSam.valueType == "s32") {
+				_stprintf_s(canada, _T("%hs"), checkSam.InfoString);
+			}
+			else if (checkSam.valueType == "s16") {
+				_stprintf_s(canada, _T("%hs"), checkSam.TableString);
+			}
+			else if (checkSam.valueType == "f4") {
+				_stprintf_s(canada, _T("%f"), checkSam.FloatLol);
+			}
+			else if (checkSam.valueType == "i4") {
+				_stprintf_s(canada, _T("%u"), checkSam.IntegerLol);
+			}
+			
+			if (j == 0) {
+				_stprintf_s(theInfo.szFirstValue, L"%s", canada);
+			}
+			else if (j == 1) {
+				_stprintf_s(theInfo.szSecondValue, L"%s", canada);
+			}
+			else if (j == 2) {
+				_stprintf_s(theInfo.szThirdValue, L"%s", canada);
+			}
+		}
+		EntrysList.push_back(theInfo);
+		
+	}
+	peoplesPoo = 1;
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -293,19 +391,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			std::vector<LPWSTR> Bloxxer1Columns;
 			Bloxxer1Columns.push_back(L"Item #");
+			Bloxxer1Columns.push_back(L"First Value");
+			Bloxxer1Columns.push_back(L"Second Value");
+			Bloxxer1Columns.push_back(L"Third Value");
 			std::vector<LPWSTR> Bloxxer2Columns;
-			Bloxxer2Columns.push_back(L"Property Name");
+			Bloxxer2Columns.push_back(L"Property ID#");
 			Bloxxer2Columns.push_back(L"Property Value");
-			Bloxxer2Columns.push_back(L"Poo Poos");
+			Bloxxer2Columns.push_back(L"Property Type");
 
 			RECT rcClient;
 			GetClientRect(hWnd, &rcClient);
 
 			HWND Bloxxer = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW11);
 			HWND Bloxxer2 = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW12);
+			
 			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
 			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
-			InsertListViewItems(Bloxxer2, 5);
+			//InsertListViewItems(Bloxxer2, 5);
+			
 			
 			HWND hwndButton = CreateWindow(
 				L"BUTTON",  // Predefined class; Unicode assumed 
@@ -361,7 +464,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				OPENFILENAME ofn;       // common dialog box structure
 				char szFile[260];       // buffer for file name
-				HANDLE hf;              // file handle
+				//HANDLE hf;              // file handle
 
 										// Initialize OPENFILENAME
 				ZeroMemory(&ofn, sizeof(ofn));
@@ -382,13 +485,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				// Display the Open dialog box. 
 				if (GetOpenFileName(&ofn) == TRUE)
 				{
-					hf = CreateFile(ofn.lpstrFile,
-						GENERIC_READ,
-						0,
-						(LPSECURITY_ATTRIBUTES)NULL,
-						OPEN_EXISTING,
-						FILE_ATTRIBUTE_NORMAL,
-						(HANDLE)NULL);
+					//szTitle = (WCHAR)szFile;
+
+					//LoadStringW(NULL, IDS_APP_TITLE, (LPWSTR)szFile, MAX_LOADSTRING);
+					ReadInfoFile(OpenedFile, (LPWSTR)szFile);
+					HWND poopHead = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+					ListView_DeleteAllItems(poopHead);
+					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+					ListView_DeleteAllItems(mainLolz);
+					PropertiesList.clear();
+					changeEntryList();
+					InsertListViewItems(poopHead, (int)OpenedFile.header.NumberOfItems);
+
 				}
 			}
 				break;
@@ -420,19 +528,62 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case LVN_GETDISPINFO:
 		{
 			NMLVDISPINFO* plvdi = (NMLVDISPINFO*)lParam;
+			UINT_PTR compareRare = ((LPNMHDR)lParam)->idFrom;
 			switch (plvdi->item.iSubItem)
 			{
 			case 0:
-				// rgPetInfo is an array of PETINFO structures.
-				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szKind;
-				break;
-
+			{
+				
+				if (compareRare == 0) {
+					plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szKind;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW11) {
+					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szNumber;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW12) {
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szID;
+				}
+			}
+			break;
 			case 1:
-				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szBreed;
-				break;
+			{
+				if (peoplesPoo == 0) {
+					plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szBreed;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW11) {
+					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szFirstValue;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW12) {
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szValue;
+				}
+			}
+			break;
 			case 2:
-				plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szPrice;
-				break;
+			{
+				if (peoplesPoo == 0) {
+					plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szPrice;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW11) {
+					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szSecondValue;
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW12) {
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szType;
+				}
+			}
+			break;
+			case 3:
+			{
+				if (peoplesPoo == 0) {
+
+				}
+				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW11) {
+					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szThirdValue;
+				}
+				else if (peoplesPoo == 2) {
+
+				}
+			}
+			break;
 
 			default:
 				break;
@@ -440,8 +591,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return TRUE;
 		}
 		// More notifications...
-		}
 
+		case NM_DBLCLK:
+		{
+			NMITEMACTIVATE* fartMan = (NMITEMACTIVATE*)lParam;
+			UINT_PTR party = ((LPNMHDR)lParam)->idFrom;
+			//{
+			if((UINT_PTR)IDC_MAIN_LISTVIEW11 == party && fartMan->iItem > -1)
+				{
+					
+					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+					ListView_DeleteAllItems(mainLolz);
+					changePropList(fartMan->iItem);
+					InsertListViewItems(mainLolz, PropertiesList.size());
+					//peoplesPoo = -1;
+					
+					//break;
+				}
+			//case IDC_MAIN_LISTVIEW12:
+			//{
+			//	break;
+			//}
+			//default:
+			//	break;
+			//}
+			return TRUE;
+		}
+	}
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }

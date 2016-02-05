@@ -30,12 +30,18 @@
     <ClInclude Include="iNfoFR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="readFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="iNfoFR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
