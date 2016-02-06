@@ -123,6 +123,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define IDC_MAIN_LISTVIEW11 1472
 #define IDC_MAIN_LISTVIEW12 1473
 #define IDC_MAIN_BUTTON1 1474
+#define IDC_MAIN_EDITVALUE1 1475
 
 int peoplesPoo = 0;
 
@@ -373,6 +374,49 @@ void changeEntryList() {
 	peoplesPoo = 1;
 }
 
+static WNDPROC OriginalEditCtrlProc = NULL;
+
+LRESULT CALLBACK MyWindowProc(
+	HWND hwnd,
+	UINT uMsg,
+	WPARAM wParam,
+	LPARAM lParam)
+{
+	if (uMsg == WM_CHAR)
+	{
+		// Make sure we only allow specific characters
+		TCHAR lolText[100];
+		Edit_GetText(hwnd, lolText, 100);
+		int numDots, numNegative;
+		numNegative = 0;
+		numDots = 0;
+		for (int i = 0; i < 99; ++i) {
+			if (lolText[i] == '-') {
+				numNegative++;
+			}
+			else if (lolText[i] == '.') {
+				numDots++;
+			}
+			if ((numDots > 0 && wParam == '.')|| (numNegative > 0 && wParam == '-')) {
+				return 0;
+			}
+		}
+
+		if (!((wParam >= '0' && wParam <= '9')
+			|| wParam == '.'
+			|| wParam == '-'
+			|| wParam == VK_RETURN
+			|| wParam == VK_DELETE
+			|| wParam == VK_BACK))
+		{
+			return 0;
+		}
+	}
+	
+
+	return CallWindowProc(OriginalEditCtrlProc, hwnd, uMsg, wParam, lParam);
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -405,24 +449,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			HWND Bloxxer = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW11);
 			HWND Bloxxer2 = CreateListView(hWnd, (HMENU)IDC_MAIN_LISTVIEW12);
 			
-			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
-			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
+			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
+			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , rcClient.bottom - 70, SWP_NOZORDER);
 			//InsertListViewItems(Bloxxer2, 5);
 			
 			
 			HWND hwndButton = CreateWindow(
 				L"BUTTON",  // Predefined class; Unicode assumed 
 				L"OK",      // Button text 
-				WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+				WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,   // Styles 
 				10,         // x position 
-				(rcClient.bottom / 3) * 2 + 10,         // y position 
+				(rcClient.bottom) - 60,         // y position 
 				100,        // Button width
 				50,        // Button height
 				hWnd,     // Parent window
 				(HMENU)IDC_MAIN_BUTTON1,       // No menu.
 				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 				NULL);      // Pointer not needed.
+			
+			HWND hwndEdit = CreateWindowEx(
+				0, L"EDIT",   // predefined class 
+				NULL,         // no window title 
+				WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_AUTOHSCROLL | WS_DISABLED,
+				(rcClient.right / 3) * 2 + 50, rcClient.bottom / 2, (rcClient.right / 3) - 100, 25,   // set size in WM_SIZE message 
+				hWnd,         // parent window 
+				(HMENU)IDC_MAIN_EDITVALUE1,   // edit control ID 
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);        // pointer not needed 
+			if (hwndEdit != NULL)
+			{
+				// Subclass the window so we can filter keystrokes
+				WNDPROC oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(
+					hwndEdit,
+					GWLP_WNDPROC,
+					reinterpret_cast<LONG_PTR>(MyWindowProc)));
+				if (OriginalEditCtrlProc == NULL)
+				{
+					OriginalEditCtrlProc = oldProc;
+				}
+			}
 
+			//SendMessage(hwndEdit, WM_ENABLE, FALSE, (LPARAM)TRUE);
+							  // Add text to the window. 
+			//SendMessage(hwndEdit, WM_SETTEXT, 0, (LPARAM)lpszLatin);
 			//HWND poopBox = CreateDialog(hInst, MAKEINTRESOURCE(IDD_FORMVIEW), hWnd, PanelLol);
 			InitListViewColumns(Bloxxer, Bloxxer1Columns);
 			InitListViewColumns(Bloxxer2, Bloxxer2Columns);
@@ -437,7 +506,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_SIZE:
 	{
-		HWND hEdit, Bloxxer2, Button1Thing;
+		HWND hEdit, Bloxxer2, Button1Thing, EditBox1;
 		RECT rcClient;
 
 		GetClientRect(hWnd, &rcClient);
@@ -445,10 +514,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		hEdit = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 		Bloxxer2 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
 		Button1Thing = GetDlgItem(hWnd, IDC_MAIN_BUTTON1);
+		EditBox1 = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
 
-		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, (rcClient.bottom / 3) * 2, SWP_NOZORDER);
-		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , (rcClient.bottom / 3) * 2, SWP_NOZORDER);
-		SetWindowPos(Button1Thing, NULL, 10, (rcClient.bottom / 3) * 2 + 10, 100, 50, SWP_NOZORDER);
+		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
+		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
+		SetWindowPos(Button1Thing, NULL, 10, (rcClient.bottom) - 60, 100, 50, SWP_NOZORDER);
+		SetWindowPos(EditBox1, NULL, (rcClient.right / 3) * 2 + 30, rcClient.bottom / 2, (rcClient.right / 3) - 60, 25, SWP_NOZORDER);
 
 		
 	}
@@ -489,6 +560,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					//LoadStringW(NULL, IDS_APP_TITLE, (LPWSTR)szFile, MAX_LOADSTRING);
 					ReadInfoFile(OpenedFile, (LPWSTR)szFile);
+					//std::string putput = "(iNfoFR) ";
+					//std::string lolIpooped = szFile;
+					HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+					Edit_Enable(editLolz, FALSE);
+					Edit_SetText(editLolz, (LPTSTR)"");
+					TCHAR candySam[300];
+					_stprintf(candySam, L"%s (iNfoFR)", (LPWSTR)szFile);
+					//putput;
+					SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)(candySam));
+					
 					HWND poopHead = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 					ListView_DeleteAllItems(poopHead);
 					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
@@ -591,7 +672,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return TRUE;
 		}
 		// More notifications...
+		case NM_RETURN:
+		{
+			LPNMHDR lpnmh = (LPNMHDR)lParam;
+			switch (lpnmh->idFrom)
+			{
+			case IDC_MAIN_LISTVIEW11:
+			{
 
+				HWND lolList = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+				int getTheSelected = ListView_GetSelectionMark(lolList);
+				HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+				Edit_Enable(editLolz, FALSE);
+				Edit_SetText(editLolz, (LPTSTR)"");
+
+				if (getTheSelected > -1) {
+					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+					ListView_DeleteAllItems(mainLolz);
+					changePropList(getTheSelected);
+					InsertListViewItems(mainLolz, PropertiesList.size());
+				}
+				break;
+			}
+			default:
+				break;
+			}
+			
+			return TRUE;
+		}
 		case NM_DBLCLK:
 		{
 			NMITEMACTIVATE* fartMan = (NMITEMACTIVATE*)lParam;
@@ -603,11 +711,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
 					ListView_DeleteAllItems(mainLolz);
 					changePropList(fartMan->iItem);
+					HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+					Edit_Enable(editLolz, FALSE);
+					Edit_SetText(editLolz, (LPTSTR)"");
 					InsertListViewItems(mainLolz, PropertiesList.size());
 					//peoplesPoo = -1;
 					
 					//break;
 				}
+			else if ((UINT_PTR)IDC_MAIN_LISTVIEW12 == party && fartMan->iItem > -1)
+			{
+				HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+				PROPERTYLISTINFO lolProp = PropertiesList[fartMan->iItem];
+				SendMessage(editLolz, WM_SETTEXT, 0, (LPARAM)lolProp.szValue);
+				Edit_Enable(editLolz, TRUE);
+				//SendMessage(editLolz, WM_ENABLE, TRUE, (LPARAM)TRUE);
+			}
 			//case IDC_MAIN_LISTVIEW12:
 			//{
 			//	break;

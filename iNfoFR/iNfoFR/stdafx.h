@@ -13,6 +13,7 @@
 #include <Commdlg.h>
 #include <Commctrl.h>
 #include <Uxtheme.h>
+#include <Windowsx.h>
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>

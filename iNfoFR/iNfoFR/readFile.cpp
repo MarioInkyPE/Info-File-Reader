@@ -139,6 +139,7 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
     OVERLAPPED overlapped;
     DWORD yoBobby;
     ZeroMemory(&overlapped, sizeof(OVERLAPPED));
+	//ZeroMemory(&Bobby, sizeof(Bobby));
     //overlapped.hEvent = CreateEvent(NULL, true, false, NULL);
 
     hFile = CreateFile(pathFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
@@ -222,6 +223,7 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
                 }
         }
         CloseHandle(hFile);
+		//ZeroMemory(&tempBobby, sizeof(tempBobby));
         //ZeroMemory(&overlapped, sizeof(OVERLAPPED));
         //ZeroMemory(&tempBobby, sizeof(IFWhole));
     }
