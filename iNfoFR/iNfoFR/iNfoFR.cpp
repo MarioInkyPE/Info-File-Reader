@@ -124,6 +124,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define IDC_MAIN_LISTVIEW12 1473
 #define IDC_MAIN_BUTTON1 1474
 #define IDC_MAIN_EDITVALUE1 1475
+#define IDC_MAIN_BUTTON2 1476
+#define IDC_MAIN_TEXTDISP11 1477
+#define IDC_MAIN_TEXTDISP12 1478
+#define IDC_MAIN_TEXTDISP13 1479
+#define IDC_MAIN_TEXTDISP21 1480
+#define IDC_MAIN_TEXTDISP22 1481
+#define IDC_MAIN_TEXTDISP23 1482
+#define IDSC_MAIN_EDITFLOAT 2472
+#define IDSC_MAIN_EDITINT 2473
+#define IDSC_MAIN_EDITSTRING32 2474
+#define IDSC_MAIN_EDITSTRING16 2475
+#define BUTTON_APPLY 2601
 
 int peoplesPoo = 0;
 
@@ -252,7 +264,8 @@ struct PROPERTYLISTINFO {
 
 std::vector<ENTRYLISTINFO> EntrysList;
 std::vector<PROPERTYLISTINFO> PropertiesList;
-
+int SelectedProperty;
+int SelectedItem;
 
 PETINFO rgPetInfo[5] =
 {
@@ -374,47 +387,151 @@ void changeEntryList() {
 	peoplesPoo = 1;
 }
 
-static WNDPROC OriginalEditCtrlProc = NULL;
+std::string MBFromW(LPCWSTR pwsz, UINT cp) {
+	int cch = WideCharToMultiByte(cp, 0, pwsz, -1, 0, 0, NULL, NULL);
 
-LRESULT CALLBACK MyWindowProc(
+	char* psz = new char[cch];
+
+	WideCharToMultiByte(cp, 0, pwsz, -1, psz, cch, NULL, NULL);
+
+	std::string st(psz);
+	delete[] psz;
+
+	return st;
+}
+
+static WNDPROC OriginalEditCtrlProc1 = NULL;
+
+//For use with Floats in Edit boxes.
+LRESULT CALLBACK EditFloatWindowProc(
 	HWND hwnd,
 	UINT uMsg,
 	WPARAM wParam,
-	LPARAM lParam)
+	LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	switch(uIdSubclass)
+	{
+	case IDSC_MAIN_EDITFLOAT:
+		if (uMsg == WM_CHAR)
+		{
+			// Make sure we only allow specific characters
+			TCHAR lolText[100];
+			Edit_GetText(hwnd, lolText, 100);
+			int numDots, numNegative;
+			numNegative = 0;
+			numDots = 0;
+			for (int i = 0; i < 99; ++i) {
+				if (lolText[i] == '-') {
+					numNegative++;
+				}
+				else if (lolText[i] == '.') {
+					numDots++;
+				}
+				if ((numDots > 0 && wParam == '.') || (numNegative > 0 && wParam == '-')) {
+					return 0;
+				}
+			}
+
+			if (!((wParam >= '0' && wParam <= '9')
+				|| wParam == '.'
+				|| wParam == '-'
+				|| wParam == VK_RETURN
+				|| wParam == VK_DELETE
+				|| wParam == VK_BACK))
+			{
+				return 0;
+			}
+		}
+		break;
+	case IDSC_MAIN_EDITINT:
+	{
+		if (uMsg == WM_CHAR)
+		{
+			// Make sure we only allow specific characters
+			if (!((wParam >= '0' && wParam <= '9')
+				|| wParam == VK_RETURN
+				|| wParam == VK_DELETE
+				|| wParam == VK_BACK))
+			{
+				return 0;
+			}
+		}
+		break;
+	}
+		
+	case IDSC_MAIN_EDITSTRING32:
+	{
+		break; 
+	}
+	case IDSC_MAIN_EDITSTRING16:
+	{
+		break; 
+	}
+	default:
+		break;
+	}
+	
+
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
+
+//For use with Ints in Edit boxes.
+LRESULT CALLBACK EditIntWindowProc(
+	HWND hwnd,
+	UINT uMsg,
+	WPARAM wParam,
+	LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
 	if (uMsg == WM_CHAR)
 	{
 		// Make sure we only allow specific characters
-		TCHAR lolText[100];
-		Edit_GetText(hwnd, lolText, 100);
-		int numDots, numNegative;
-		numNegative = 0;
-		numDots = 0;
-		for (int i = 0; i < 99; ++i) {
-			if (lolText[i] == '-') {
-				numNegative++;
-			}
-			else if (lolText[i] == '.') {
-				numDots++;
-			}
-			if ((numDots > 0 && wParam == '.')|| (numNegative > 0 && wParam == '-')) {
-				return 0;
-			}
-		}
-
-		if (!((wParam >= '0' && wParam <= '9')
-			|| wParam == '.'
-			|| wParam == '-'
-			|| wParam == VK_RETURN
-			|| wParam == VK_DELETE
-			|| wParam == VK_BACK))
+		if (!((wParam >= '0' && wParam <= '9') || wParam == VK_RETURN|| wParam == VK_DELETE || wParam == VK_BACK) || (wParam == '.'))
 		{
 			return 0;
 		}
 	}
-	
 
-	return CallWindowProc(OriginalEditCtrlProc, hwnd, uMsg, wParam, lParam);
+
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
+
+void setSubclassEdit(HWND editLolz, PROPERTYLISTINFO lolProp) {
+	if (!_tcscmp(lolProp.szType, _T("f4"))) {
+		RemoveWindowSubclass(editLolz, EditIntWindowProc, IDSC_MAIN_EDITINT);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING16);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING32);
+		SetWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITFLOAT, 0);
+		Edit_LimitText(editLolz, 15);
+	}
+	else if (!_tcscmp(lolProp.szType, _T("i4"))) {
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITFLOAT);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING16);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING32);
+		SetWindowSubclass(editLolz, EditIntWindowProc, IDSC_MAIN_EDITINT, 1);
+		Edit_LimitText(editLolz, 10);
+	}
+	else if (!_tcscmp(lolProp.szType, _T("s16"))) {
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITFLOAT);
+		RemoveWindowSubclass(editLolz, EditIntWindowProc, IDSC_MAIN_EDITINT);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING32);
+		SetWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING16, 2);
+		Edit_LimitText(editLolz, 15);
+	}
+	else if (!_tcscmp(lolProp.szType, _T("s32"))) {
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING16);
+		RemoveWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITFLOAT);
+		RemoveWindowSubclass(editLolz, EditIntWindowProc, IDSC_MAIN_EDITINT);
+		SetWindowSubclass(editLolz, EditFloatWindowProc, IDSC_MAIN_EDITSTRING32, 3);
+		Edit_LimitText(editLolz, 31);
+	}
+}
+
+void ClearEditArea(HWND hWnd, HWND editLolz) {
+	HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
+	Edit_Enable(editLolz, FALSE);
+	Edit_SetText(editLolz, (LPTSTR)"");
+	SelectedProperty = -1;
+	Button_Enable(applyButton, FALSE);
 }
 
 //
@@ -467,6 +584,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 				NULL);      // Pointer not needed.
 			
+			HWND hwndApplyButton = CreateWindow(
+				L"BUTTON",  // Predefined class; Unicode assumed 
+				L"Apply",      // Button text 
+				WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | WS_DISABLED,   // Styles 
+				(rcClient.right / 3) * 2 + 50,         // x position 
+				(rcClient.bottom / 2) + 30 ,         // y position 
+				((rcClient.right / 3) - 100) / 2 - 5,        // Button width
+				25,        // Button height
+				hWnd,     // Parent window
+				(HMENU)IDC_MAIN_BUTTON2,       // No menu.
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);      // Pointer not needed.
+
+			
 			HWND hwndEdit = CreateWindowEx(
 				0, L"EDIT",   // predefined class 
 				NULL,         // no window title 
@@ -476,19 +607,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				(HMENU)IDC_MAIN_EDITVALUE1,   // edit control ID 
 				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 				NULL);        // pointer not needed 
-			if (hwndEdit != NULL)
-			{
-				// Subclass the window so we can filter keystrokes
-				WNDPROC oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(
-					hwndEdit,
-					GWLP_WNDPROC,
-					reinterpret_cast<LONG_PTR>(MyWindowProc)));
-				if (OriginalEditCtrlProc == NULL)
-				{
-					OriginalEditCtrlProc = oldProc;
-				}
-			}
-
+			
+			HWND EditDisplayType = CreateWindowEx(
+				0, L"EDIT", 
+				NULL, 
+				WS_CHILD| WS_VISIBLE| ES_RIGHT| WS_DISABLED, // | WS_THICKFRAME
+				(rcClient.right / 3) * 2 + 20, rcClient.top + 50, (rcClient.right / 3) / 2 - 25, 25,   
+				hWnd,         
+				(HMENU)IDC_MAIN_TEXTDISP11,    
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);
+			Edit_SetText(EditDisplayType, L"Property Type: ");
+			HWND EditTextType = CreateWindowEx(
+				0, L"EDIT",
+				NULL,
+				WS_CHILD | WS_VISIBLE | ES_LEFT | WS_DISABLED, 
+				(rcClient.right / 3) * 2 + (rcClient.right / 3) / 2 + 5, rcClient.top + 50, rcClient.right - 25, 25,
+				hWnd,
+				(HMENU)IDC_MAIN_TEXTDISP21,
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);
 			//SendMessage(hwndEdit, WM_ENABLE, FALSE, (LPARAM)TRUE);
 							  // Add text to the window. 
 			//SendMessage(hwndEdit, WM_SETTEXT, 0, (LPARAM)lpszLatin);
@@ -506,7 +644,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_SIZE:
 	{
-		HWND hEdit, Bloxxer2, Button1Thing, EditBox1;
+		HWND hEdit, Bloxxer2, Button1Thing, EditBox1, ApplyButton, TextBox1, TextBox12;
 		RECT rcClient;
 
 		GetClientRect(hWnd, &rcClient);
@@ -515,12 +653,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Bloxxer2 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
 		Button1Thing = GetDlgItem(hWnd, IDC_MAIN_BUTTON1);
 		EditBox1 = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+		ApplyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
+		TextBox1 = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP11);
+		TextBox12 = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP21);
 
 		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
 		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
 		SetWindowPos(Button1Thing, NULL, 10, (rcClient.bottom) - 60, 100, 50, SWP_NOZORDER);
 		SetWindowPos(EditBox1, NULL, (rcClient.right / 3) * 2 + 30, rcClient.bottom / 2, (rcClient.right / 3) - 60, 25, SWP_NOZORDER);
-
+		SetWindowPos(ApplyButton, NULL, (rcClient.right / 3) * 2 + 30,(rcClient.bottom / 2) + 30,((rcClient.right / 3) - 100) / 2 - 5, 25, SWP_NOZORDER);
+		SetWindowPos(TextBox1, NULL,(rcClient.right / 3) * 2 + 20, rcClient.top + 50, (rcClient.right / 3) / 2 - 25, 25, SWP_NOZORDER);
+		SetWindowPos(TextBox12, NULL, (rcClient.right / 3) * 2 + (rcClient.right / 3) / 2 + 5, rcClient.top + 50, rcClient.right - 25, 25, SWP_NOZORDER);
 		
 	}
 		break;
@@ -559,24 +702,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					//szTitle = (WCHAR)szFile;
 
 					//LoadStringW(NULL, IDS_APP_TITLE, (LPWSTR)szFile, MAX_LOADSTRING);
-					ReadInfoFile(OpenedFile, (LPWSTR)szFile);
-					//std::string putput = "(iNfoFR) ";
-					//std::string lolIpooped = szFile;
-					HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
-					Edit_Enable(editLolz, FALSE);
-					Edit_SetText(editLolz, (LPTSTR)"");
-					TCHAR candySam[300];
-					_stprintf(candySam, L"%s (iNfoFR)", (LPWSTR)szFile);
-					//putput;
-					SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)(candySam));
-					
-					HWND poopHead = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
-					ListView_DeleteAllItems(poopHead);
-					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
-					ListView_DeleteAllItems(mainLolz);
-					PropertiesList.clear();
-					changeEntryList();
-					InsertListViewItems(poopHead, (int)OpenedFile.header.NumberOfItems);
+					if (ReadInfoFile(OpenedFile, (LPWSTR)szFile))
+					{
+						//std::string putput = "(iNfoFR) ";
+						//std::string lolIpooped = szFile;
+						SelectedItem = -1;
+						HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+						ClearEditArea(hWnd, editLolz);
+						TCHAR candySam[300];
+						_stprintf(candySam, L"%s (iNfoFR)", (LPWSTR)szFile);
+						//putput;
+						SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)(candySam));
+
+						HWND poopHead = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+						ListView_DeleteAllItems(poopHead);
+						HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+						ListView_DeleteAllItems(mainLolz);
+						PropertiesList.clear();
+						changeEntryList();
+						InsertListViewItems(poopHead, (int)OpenedFile.header.NumberOfItems);
+					}
+					else {
+						MessageBox(hWnd, L"File Did not Open Fully", L"ERROR", MB_OK | MB_ICONERROR);
+					}
 
 				}
 			}
@@ -587,6 +735,85 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+			case IDC_MAIN_BUTTON2:
+			{
+				LPNMHDR lpnmh = (LPNMHDR)lParam;
+				
+				//HIWORD(wParam);
+				//case IDC_MAIN_BUTTON2:
+				//{
+					if (SelectedProperty > -1) {
+						HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+						PROPERTYLISTINFO lolProp = PropertiesList[SelectedProperty];
+						HWND lolList2 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+						HWND lolList1 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+
+						Edit_GetText(editLolz, PropertiesList[SelectedProperty].szValue, 31);
+						
+
+						
+						std::string newMe = MBFromW(PropertiesList[SelectedProperty].szValue, CP_ACP);
+						
+
+						if (!_tcscmp(lolProp.szType, _T("f4"))) {
+							OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].FloatLol = std::stof(newMe);
+						}
+						else if (!_tcscmp(lolProp.szType, _T("i4"))) {
+							OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].IntegerLol = (u32)std::stoul(newMe);
+						}
+						else if (!_tcscmp(lolProp.szType, _T("s16"))) {
+							std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].TableString, newMe.c_str());
+						}
+						else if (!_tcscmp(lolProp.szType, _T("s32"))) {
+								std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].InfoString, newMe.c_str());
+						}
+
+						
+						ListView_Update(lolList2, SelectedProperty);
+
+						
+						if (SelectedProperty == 0) {
+							_stprintf(EntrysList[SelectedItem].szFirstValue, L"%s", PropertiesList[SelectedProperty].szValue);
+							//EntrysList[SelectedItem].szFirstValue = PropertiesList[SelectedProperty].szValue;
+						}
+						else if (SelectedProperty == 1) {
+							_stprintf(EntrysList[SelectedItem].szSecondValue, L"%s", PropertiesList[SelectedProperty].szValue);
+							//EntrysList[SelectedItem].szSecondValue = PropertiesList[SelectedProperty].szValue;
+						}
+						else if (SelectedProperty == 2) {
+							_stprintf(EntrysList[SelectedItem].szThirdValue, L"%s", PropertiesList[SelectedProperty].szValue);
+							//EntrysList[SelectedItem].szThirdValue = PropertiesList[SelectedProperty].szValue;
+						}
+						ListView_Update(lolList1, SelectedItem);
+
+						
+
+					}
+					break;
+				//}
+				
+			}
+			case ID_FILE_SAVE:
+			{
+				OPENFILENAME ofn;
+				char szFileName[MAX_PATH] = "";
+
+				ZeroMemory(&ofn, sizeof(ofn));
+
+				ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+				ofn.hwndOwner = hWnd;
+				ofn.lpstrFilter = L"Info Files\0*info;*table;telesa\0All\0*.*\0";
+				ofn.lpstrFile = (LPWSTR)szFileName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+				ofn.lpstrDefExt = L"";
+
+				if (GetSaveFileName(&ofn))
+				{
+					WriteInfoFile(OpenedFile, (LPWSTR)szFileName);
+					// Do something usefull with the filename stored in szFileName 
+				}
+			}
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -683,16 +910,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				HWND lolList = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 				int getTheSelected = ListView_GetSelectionMark(lolList);
 				HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
-				Edit_Enable(editLolz, FALSE);
-				Edit_SetText(editLolz, (LPTSTR)"");
-
+				ClearEditArea(hWnd, editLolz);
 				if (getTheSelected > -1) {
+					SelectedItem = getTheSelected;
 					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
 					ListView_DeleteAllItems(mainLolz);
 					changePropList(getTheSelected);
 					InsertListViewItems(mainLolz, PropertiesList.size());
 				}
 				break;
+			}
+			case IDC_MAIN_LISTVIEW12:
+			{
+				HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+				int getTheSelected = ListView_GetSelectionMark(mainLolz);
+				if (getTheSelected > -1) {
+					HWND typeBox = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP21);
+					HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+
+					PROPERTYLISTINFO lolProp = PropertiesList[getTheSelected];
+					SendMessage(editLolz, WM_SETTEXT, 0, (LPARAM)lolProp.szValue);
+					SelectedProperty = getTheSelected;
+					setSubclassEdit(editLolz, lolProp);
+					Edit_Enable(editLolz, TRUE);
+					Edit_SetText(typeBox, lolProp.szType);
+					HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
+					Button_Enable(applyButton, TRUE);
+				}
+				break; 
 			}
 			default:
 				break;
@@ -709,33 +954,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					
 					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+					SelectedItem = fartMan->iItem;
 					ListView_DeleteAllItems(mainLolz);
 					changePropList(fartMan->iItem);
 					HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
-					Edit_Enable(editLolz, FALSE);
-					Edit_SetText(editLolz, (LPTSTR)"");
+					ClearEditArea(hWnd, editLolz);
 					InsertListViewItems(mainLolz, PropertiesList.size());
-					//peoplesPoo = -1;
 					
-					//break;
 				}
 			else if ((UINT_PTR)IDC_MAIN_LISTVIEW12 == party && fartMan->iItem > -1)
 			{
 				HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
+				HWND typeBox = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP21);
 				PROPERTYLISTINFO lolProp = PropertiesList[fartMan->iItem];
 				SendMessage(editLolz, WM_SETTEXT, 0, (LPARAM)lolProp.szValue);
+				SelectedProperty = fartMan->iItem;
+				setSubclassEdit(editLolz, lolProp);
 				Edit_Enable(editLolz, TRUE);
+				Edit_SetText(typeBox, lolProp.szType);
+				HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
+				Button_Enable(applyButton, TRUE);
+				//
 				//SendMessage(editLolz, WM_ENABLE, TRUE, (LPARAM)TRUE);
 			}
-			//case IDC_MAIN_LISTVIEW12:
-			//{
-			//	break;
-			//}
-			//default:
-			//	break;
-			//}
 			return TRUE;
+		
 		}
+		
 	}
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
