@@ -167,6 +167,13 @@
     <ResourceCompile Include="iNfoFR.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\..\..\..\Downloads\X5v7K54.ico" />
+    <Image Include="..\..\..\..\..\pictures\ico00001.ico" />
+    <Image Include="..\..\..\..\..\Pictures\icon1.ico" />
+    <Image Include="..\..\..\..\..\Pictures\X5v7K54.png" />
+    <Image Include="favicon.ico" />
+    <Image Include="icon1.ico" />
+    <Image Include="icon2.ico" />
     <Image Include="iNfoFR.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
