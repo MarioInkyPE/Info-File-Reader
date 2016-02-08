@@ -281,7 +281,7 @@ BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
                         for(u32 j=0; j<Bobby.header.NumberOfProperties; ++j){
                             IFPropertyValue someProperty = UsingFred.TheProperties[j];
                             IFMainProperty NodeLol = Bobby.Nodes[j];
-                            overlapped.Offset = (int)UsingFred.ItemPosition + NodeLol.PropertyOffset;
+                            overlapped.Offset = (int)(Bobby.header.ItemsOffset + (i * Bobby.header.ItemLength)) + NodeLol.PropertyOffset;
                             if(NodeLol.PropCatagory == 1){
                                 //std::string endString = std::string(pathFileName);
                                 if(someProperty.valueType == "s32"){
