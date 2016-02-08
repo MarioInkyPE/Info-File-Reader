@@ -826,53 +826,57 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				HWND listLol1 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 				int lolPoo = ListView_GetSelectionMark(listLol1);
-				IFItem copyAp = OpenedFile.ItemsLolz[lolPoo];
-				OpenedFile.ItemsLolz.push_back(copyAp);
-				OpenedFile.header.NumberOfItems += 1;
-				ENTRYLISTINFO theInfo;
-				IFItem currentEnt = copyAp;
-				_stprintf_s(theInfo.szNumber, L"%d", OpenedFile.header.NumberOfItems - 1);
-				for (int j = 0; j < 3 && j < (int)OpenedFile.header.NumberOfProperties; ++j) {
-					TCHAR canada[32];
-					IFPropertyValue checkSam = currentEnt.TheProperties[j];
-					if (checkSam.valueType == "s32") {
-						_stprintf_s(canada, _T("%hs"), checkSam.InfoString);
-					}
-					else if (checkSam.valueType == "s16") {
-						_stprintf_s(canada, _T("%hs"), checkSam.TableString);
-					}
-					else if (checkSam.valueType == "f4") {
-						_stprintf_s(canada, _T("%f"), checkSam.FloatLol);
-					}
-					else if (checkSam.valueType == "i4") {
-						_stprintf_s(canada, _T("%u"), checkSam.IntegerLol);
-					}
+				if (lolPoo > -1) {
+					IFItem copyAp = OpenedFile.ItemsLolz[lolPoo];
+					OpenedFile.ItemsLolz.push_back(copyAp);
+					OpenedFile.header.NumberOfItems += 1;
+					ENTRYLISTINFO theInfo;
+					IFItem currentEnt = copyAp;
+					_stprintf_s(theInfo.szNumber, L"%d", OpenedFile.header.NumberOfItems - 1);
+					for (int j = 0; j < 3 && j < (int)OpenedFile.header.NumberOfProperties; ++j) {
+						TCHAR canada[32];
+						IFPropertyValue checkSam = currentEnt.TheProperties[j];
+						if (checkSam.valueType == "s32") {
+							_stprintf_s(canada, _T("%hs"), checkSam.InfoString);
+						}
+						else if (checkSam.valueType == "s16") {
+							_stprintf_s(canada, _T("%hs"), checkSam.TableString);
+						}
+						else if (checkSam.valueType == "f4") {
+							_stprintf_s(canada, _T("%f"), checkSam.FloatLol);
+						}
+						else if (checkSam.valueType == "i4") {
+							_stprintf_s(canada, _T("%u"), checkSam.IntegerLol);
+						}
 
-					if (j == 0) {
-						_stprintf_s(theInfo.szFirstValue, L"%s", canada);
+						if (j == 0) {
+							_stprintf_s(theInfo.szFirstValue, L"%s", canada);
+						}
+						else if (j == 1) {
+							_stprintf_s(theInfo.szSecondValue, L"%s", canada);
+						}
+						else if (j == 2) {
+							_stprintf_s(theInfo.szThirdValue, L"%s", canada);
+						}
 					}
-					else if (j == 1) {
-						_stprintf_s(theInfo.szSecondValue, L"%s", canada);
-					}
-					else if (j == 2) {
-						_stprintf_s(theInfo.szThirdValue, L"%s", canada);
-					}
+					EntrysList.push_back(theInfo);
+					InsertListViewItems(listLol1, 1);
 				}
-				EntrysList.push_back(theInfo);
-				InsertListViewItems(listLol1, 1);
 				
 			}
 			case IDC_MAIN_BUTTON3DEL:
 			{
 				HWND listLol1 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 				int lolPoo = ListView_GetSelectionMark(listLol1);
-				OpenedFile.ItemsLolz.erase(OpenedFile.ItemsLolz.begin() + lolPoo);
-				EntrysList.erase(EntrysList.begin() + lolPoo);
-				OpenedFile.header.NumberOfItems--;
-				ListView_DeleteItem(listLol1, lolPoo);
-				for (int i = 0; i < (int)OpenedFile.header.NumberOfItems; ++i){
-					_stprintf_s(EntrysList[i].szNumber, L"%d", i);
-					ListView_Update(listLol1, i);
+				if (lolPoo > -1) {
+					OpenedFile.ItemsLolz.erase(OpenedFile.ItemsLolz.begin() + lolPoo);
+					EntrysList.erase(EntrysList.begin() + lolPoo);
+					OpenedFile.header.NumberOfItems--;
+					ListView_DeleteItem(listLol1, lolPoo);
+					for (int i = 0; i < (int)OpenedFile.header.NumberOfItems; ++i) {
+						_stprintf_s(EntrysList[i].szNumber, L"%d", i);
+						ListView_Update(listLol1, i);
+					}
 				}
 				
 			}
