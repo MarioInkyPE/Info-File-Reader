@@ -6,6 +6,7 @@
 #include <tchar.h>
 #include <commctrl.h>
 #include "readFile.h"
+#include "DocumentReader.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -35,42 +36,6 @@ int maxl(int a, int b)
 
 #pragma pack(push, 1)
 
-/*struct IFHeader{
-    u32 NumberOfItems;
-    u32 NumberOfProperties;
-    u32 ItemsOffset;
-    u32 ItemLength;
-};
-
-struct IFMainProperty{
-    u32 PropID;
-    u16 unknown1;
-    u16 unknown2;
-    u16 PropertyOffset;
-    u16 PropCatagory;
-};
-
-struct IFPropertyValue{
-    IFMainProperty theResourceStuff;
-    std::string ValueName;
-    u32 ValueID;
-    char valueType[4];
-    char TableString[10];
-    char InfoString[20];
-    u32 IntegerLol;
-    float FloatLol;
-};
-
-struct IFItem{
-    std::vector<IFPropertyValue> TheProperties;
-    u32 ItemPosition;
-};
-
-struct IFWhole{
-    IFHeader header;
-    std::vector<IFMainProperty> Nodes;
-    std::vector<IFItem> ItemsLolz;
-};*/
 
 #pragma pack(pop)
 
@@ -131,7 +96,9 @@ void swapFloat(float * floatpointer) {
 	*(first + 0x01) = mem;
 }
 
-BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
+//Reads the Info and Table files. If it is named 'info' at the end,
+//it uses the 32-byte string. Else, it is 16-Byte.
+BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName, std::vector<DocumentReader::DocumentItem>& DocInit)
 {
     HANDLE hFile;
     BOOL bSuccess = FALSE;
@@ -139,8 +106,6 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
     OVERLAPPED overlapped;
     DWORD yoBobby;
     ZeroMemory(&overlapped, sizeof(OVERLAPPED));
-	//ZeroMemory(&Bobby, sizeof(Bobby));
-    //overlapped.hEvent = CreateEvent(NULL, true, false, NULL);
 
     hFile = CreateFile(pathFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
         OPEN_EXISTING, 0 , NULL);
@@ -159,7 +124,6 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
                     toDWORD(tempPoops.NumberOfProperties);
                     toDWORD(tempPoops.ItemsOffset);
                     toDWORD(tempPoops.ItemLength);
-                    //overlapped.Offset += sizeof(u32) * 4;
 
                     tempBobby.header = tempPoops;
 
@@ -168,10 +132,8 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
                         BOOL isNodeRead = ReadFile(hFile, &poopScoop, 12, &yoBobby, NULL);
                         if(isNodeRead == FALSE){
                             CloseHandle(hFile);
-                            //ZeroMemory(&overlapped, sizeof(OVERLAPPED));
                             return FALSE;
                         }
-                        //overlapped.Offset += sizeof(u32) * 3;
                         toWORD(poopScoop.PropCatagory);
                         toWORD(poopScoop.PropertyOffset);
                         toWORD(poopScoop.unknown1);
@@ -211,24 +173,32 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName)
                                 ReadFile(hFile, &someProperty.IntegerLol, 4, &yoBobby, &overlapped);
                                 toDWORD(someProperty.IntegerLol);
                             }
+							DocumentReader DocFunc = DocumentReader::DocumentReader();
                             someProperty.ValueID = NodeLol.PropID;
+							if (DocInit.size() >= 1) {
+								int GoodDoc = DocFunc.IDMatch(DocInit, NodeLol.PropID);
+								if (GoodDoc > -1) {
+									someProperty.ValueName = DocInit[GoodDoc].Name;
+								}
+								else {
+									someProperty.ValueName = "(Undocumented)";
+								}
+							}
                             someProperty.theResourceStuff = NodeLol;
                             UsingFred.TheProperties.push_back(someProperty);
                         }
                         tempBobby.ItemsLolz.push_back(UsingFred);
                     }
                     bSuccess = TRUE;
-                    //ZeroMemory(&Bobby, sizeof(IFWhole));
                     Bobby = tempBobby;
                 }
         }
         CloseHandle(hFile);
-		//ZeroMemory(&tempBobby, sizeof(tempBobby));
-        //ZeroMemory(&overlapped, sizeof(OVERLAPPED));
-        //ZeroMemory(&tempBobby, sizeof(IFWhole));
+
     }
     return bSuccess;
 }
+
 
 //lololl
 BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
@@ -237,7 +207,6 @@ BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
     BOOL bSuccess = FALSE;
     IFWhole tempBobby;
     OVERLAPPED overlapped;
-    //DWORD yoBobby;
     ZeroMemory(&overlapped, sizeof(OVERLAPPED));
 
     hFile = CreateFile(pszFileName, GENERIC_WRITE, 0, NULL,
@@ -245,20 +214,7 @@ BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
     if(hFile != INVALID_HANDLE_VALUE)
     {
         tempBobby = Bobby;
-        //DWORD dwTextLength;
-
-        //dwTextLength = GetWindowTextLength(hEdit);
-        // No need to bother if there's no text.
-       // if(dwTextLength > 0)
-        //{
-            //LPSTR pszText;
-            //DWORD dwBufferSize = dwTextLength + 1;
-
-            //pszText = GlobalAlloc(GPTR, dwBufferSize);
-            //if(pszText != NULL)
-            //{
-                //if(GetWindowText(hEdit, pszText, dwBufferSize))
-                //{
+        
                     DWORD dwWritten;
 
                     toDWORD(tempBobby.header.NumberOfItems);
@@ -283,31 +239,20 @@ BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
                             IFMainProperty NodeLol = Bobby.Nodes[j];
                             overlapped.Offset = (int)(Bobby.header.ItemsOffset + (i * Bobby.header.ItemLength)) + NodeLol.PropertyOffset;
                             if(NodeLol.PropCatagory == 1){
-                                //std::string endString = std::string(pathFileName);
+                               
                                 if(someProperty.valueType == "s32"){
                                     WriteFile(hFile, &someProperty.InfoString, 32, &dwWritten, &overlapped);
-                                    //someProperty.valueType = "s32";
-                                   // ReadFile(hFile, &someProperty.InfoString, 32, &yoBobby, &overlapped);
                                 }
                                 else{
-                                    WriteFile(hFile, &someProperty.TableString, 16, &dwWritten, &overlapped);
-                                    //someProperty.valueType = "s16";
-                                    //ReadFile(hFile, &someProperty.TableString, 16, &yoBobby, &overlapped);
+                                    WriteFile(hFile, &someProperty.TableString, 16, &dwWritten, &overlapped);  
                                 }
                             }
                             else if(NodeLol.PropCatagory == 2){
-                                //someProperty.valueType = "f4";
-                               // ReadFile(hFile, &someProperty.rawValue, 4, &yoBobby, &overlapped);
-                               // u8 * ptr = someProperty.rawValue;
-                               // std::reverse(ptr, ptr + 4);
-                               // someProperty.FloatLol = *reinterpret_cast<float*>(ptr);
-                               // std::reverse(ptr, ptr + 4);
+                              
                                swapFloat(&someProperty.FloatLol);
                                WriteFile(hFile, &someProperty.FloatLol, 4, &dwWritten, &overlapped);
                             }
                             else{
-                                //someProperty.valueType = "i4";
-                                //ReadFile(hFile, &someProperty.IntegerLol, 4, &yoBobby, &overlapped);
                                 toDWORD(someProperty.IntegerLol);
                                 WriteFile(hFile, &someProperty.IntegerLol, 4, &dwWritten, &overlapped);
                             }
@@ -321,12 +266,8 @@ BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName)
                             WriteFile(hFile, &aDoot, 1, &dwWritten, NULL);
                         }
                     }
-                    //if(WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
+                    
                         bSuccess = TRUE;
-                //}
-                //GlobalFree(pszText);
-            //}
-        //}
         CloseHandle(hFile);
     }
     return bSuccess;
