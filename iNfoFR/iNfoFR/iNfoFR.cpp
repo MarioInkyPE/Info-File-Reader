@@ -6,6 +6,7 @@
 #include <commctrl.h>
 #include <vector>
 #include "readFile.h"
+#include "DocumentReader.h"
 
 #define MAX_LOADSTRING 100
 
@@ -196,10 +197,6 @@ BOOL InitListViewColumns(HWND hWndListView, std::vector<LPWSTR> stringList)
 			lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
 
 									// Load the names of the column headings from the string resources.
-		//LoadString(hInst,
-		//	IDS_FIRST_POOPOO + iCol,
-		//	szText,
-		//	sizeof(szText) / sizeof(szText[0]));
 
 		// Insert the columns into the list view.
 		if (ListView_InsertColumn(hWndListView, iCol, &lvc) == -1)
@@ -242,6 +239,8 @@ BOOL InsertListViewItems(HWND hWndListView, int cItems)
 }
 
 IFWhole OpenedFile;
+DocumentReader firstRead = DocumentReader::DocumentReader(); //Setting up the reading material.
+std::vector<DocumentReader::DocumentItem> DocumentationList; //Documentation Listing.
 
 struct PETINFO
 {
@@ -258,9 +257,11 @@ struct ENTRYLISTINFO {
 };
 
 struct PROPERTYLISTINFO {
+	TCHAR szName[66];
 	TCHAR szID[20];
 	TCHAR szValue[32];
 	TCHAR szType[10];
+	TCHAR szTypeDisp[40];
 };
 
 std::vector<ENTRYLISTINFO> EntrysList;
@@ -331,17 +332,22 @@ void changePropList(int item) {
 		IFPropertyValue currentProp = OpenedFile.ItemsLolz[item].TheProperties[i];
 		_stprintf_s(theInfo.szID, L"%u", currentProp.ValueID);
 		_stprintf_s(theInfo.szType, _T("%hs"), currentProp.valueType.c_str());
+		_stprintf_s(theInfo.szName, _T("%hs"), currentProp.ValueName.c_str());
 		if (currentProp.valueType == "s32") {
 			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.InfoString);
+			_stprintf_s(theInfo.szTypeDisp, L"String (size 32)");
 		}
 		else if(currentProp.valueType == "s16") {
 			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.TableString);
+			_stprintf_s(theInfo.szTypeDisp, L"String (size 16)");
 		}
 		else if (currentProp.valueType == "f4") {
 			_stprintf_s(theInfo.szValue, _T("%f"), currentProp.FloatLol);
+			_stprintf_s(theInfo.szTypeDisp, L"Float (size 4)");
 		}
 		else if (currentProp.valueType == "i4") {
 			_stprintf_s(theInfo.szValue, _T("%u"), currentProp.IntegerLol);
+			_stprintf_s(theInfo.szTypeDisp, L"Integer/Other (size 4)");
 		}
 
 		PropertiesList.push_back(theInfo);
@@ -530,7 +536,7 @@ void setSubclassEdit(HWND editLolz, PROPERTYLISTINFO lolProp) {
 void ClearEditArea(HWND hWnd, HWND editLolz) {
 	HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
 	Edit_Enable(editLolz, FALSE);
-	Edit_SetText(editLolz, (LPTSTR)"");
+	Edit_SetText(editLolz, (LPCTSTR)L"");
 	SelectedProperty = -1;
 	Button_Enable(applyButton, FALSE);
 }
@@ -557,8 +563,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			Bloxxer1Columns.push_back(L"Second Value");
 			Bloxxer1Columns.push_back(L"Third Value");
 			std::vector<LPWSTR> Bloxxer2Columns;
-			Bloxxer2Columns.push_back(L"Property ID#");
+			Bloxxer2Columns.push_back(L"Property Name");
 			Bloxxer2Columns.push_back(L"Property Value");
+			Bloxxer2Columns.push_back(L"Property ID#");
 			Bloxxer2Columns.push_back(L"Property Type");
 
 			RECT rcClient;
@@ -569,7 +576,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			SetWindowPos(Bloxxer, NULL, 0, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
 			SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3 , rcClient.bottom - 70, SWP_NOZORDER);
-			//InsertListViewItems(Bloxxer2, 5);
 			
 			
 			HWND hwndButton = CreateWindow(
@@ -640,10 +646,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				(HMENU)IDC_MAIN_TEXTDISP21,
 				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 				NULL);
-			//SendMessage(hwndEdit, WM_ENABLE, FALSE, (LPARAM)TRUE);
-							  // Add text to the window. 
-			//SendMessage(hwndEdit, WM_SETTEXT, 0, (LPARAM)lpszLatin);
-			//HWND poopBox = CreateDialog(hInst, MAKEINTRESOURCE(IDD_FORMVIEW), hWnd, PanelLol);
+			
+			
+			if (!firstRead.GetDocumentation(DocumentationList)) {
+				MessageBox(hWnd, L"Could not open set documentation", L"Error", MB_OK | MB_ICONERROR);
+			}
+
 			InitListViewColumns(Bloxxer, Bloxxer1Columns);
 			InitListViewColumns(Bloxxer2, Bloxxer2Columns);
 			
@@ -673,6 +681,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		SetWindowPos(TextBox1, NULL,(rcClient.right / 3) * 2 + 20, rcClient.top + 50, (rcClient.right / 3) / 2 - 25, 25, SWP_NOZORDER);
 		SetWindowPos(TextBox12, NULL, (rcClient.right / 3) * 2 + (rcClient.right / 3) / 2 + 5, rcClient.top + 50, rcClient.right - 25, 25, SWP_NOZORDER);
 		SetWindowPos(DelButton, NULL, 120, (rcClient.bottom) - 60, 100, 50, SWP_NOZORDER);
+
 	}
 		break;
     case WM_COMMAND:
@@ -686,10 +695,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				OPENFILENAME ofn;       // common dialog box structure
 				char szFile[260];       // buffer for file name
-				//HANDLE hf;              // file handle
 
-										// Initialize OPENFILENAME
-				ZeroMemory(&ofn, sizeof(ofn));
+				ZeroMemory(&ofn, sizeof(ofn));	// Initialize OPENFILENAME
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hWnd;
 				ofn.lpstrFile = (LPWSTR)szFile;
@@ -707,21 +714,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				// Display the Open dialog box. 
 				if (GetOpenFileName(&ofn) == TRUE)
 				{
-					//szTitle = (WCHAR)szFile;
-
-					//LoadStringW(NULL, IDS_APP_TITLE, (LPWSTR)szFile, MAX_LOADSTRING);
-					if (ReadInfoFile(OpenedFile, (LPWSTR)szFile))
+					if (ReadInfoFile(OpenedFile, (LPWSTR)szFile, DocumentationList))
 					{
-						//std::string putput = "(iNfoFR) ";
-						//std::string lolIpooped = szFile;
 						SelectedItem = -1;
 						HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
 						ClearEditArea(hWnd, editLolz);
 						TCHAR candySam[300];
 						_stprintf(candySam, L"%s (iNfoFR)", (LPWSTR)szFile);
-						//putput;
 						SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)(candySam));
-
 						HWND poopHead = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
 						ListView_DeleteAllItems(poopHead);
 						HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
@@ -747,9 +747,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				LPNMHDR lpnmh = (LPNMHDR)lParam;
 				
-				//HIWORD(wParam);
-				//case IDC_MAIN_BUTTON2:
-				//{
 					if (SelectedProperty > -1) {
 						HWND editLolz = GetDlgItem(hWnd, IDC_MAIN_EDITVALUE1);
 						PROPERTYLISTINFO lolProp = PropertiesList[SelectedProperty];
@@ -758,11 +755,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 						Edit_GetText(editLolz, PropertiesList[SelectedProperty].szValue, 31);
 						
-
-						
 						std::string newMe = MBFromW(PropertiesList[SelectedProperty].szValue, CP_ACP);
 						
-
 						if (!_tcscmp(lolProp.szType, _T("f4"))) {
 							OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].FloatLol = std::stof(newMe);
 						}
@@ -776,29 +770,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 								std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].InfoString, newMe.c_str());
 						}
 
-						
 						ListView_Update(lolList2, SelectedProperty);
-
 						
 						if (SelectedProperty == 0) {
 							_stprintf(EntrysList[SelectedItem].szFirstValue, L"%s", PropertiesList[SelectedProperty].szValue);
-							//EntrysList[SelectedItem].szFirstValue = PropertiesList[SelectedProperty].szValue;
 						}
 						else if (SelectedProperty == 1) {
 							_stprintf(EntrysList[SelectedItem].szSecondValue, L"%s", PropertiesList[SelectedProperty].szValue);
-							//EntrysList[SelectedItem].szSecondValue = PropertiesList[SelectedProperty].szValue;
 						}
 						else if (SelectedProperty == 2) {
 							_stprintf(EntrysList[SelectedItem].szThirdValue, L"%s", PropertiesList[SelectedProperty].szValue);
-							//EntrysList[SelectedItem].szThirdValue = PropertiesList[SelectedProperty].szValue;
 						}
 						ListView_Update(lolList1, SelectedItem);
-
-						
-
 					}
 					break;
-				//}
 				
 			}
 			case ID_FILE_SAVE:
@@ -915,7 +900,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szNumber;
 				}
 				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW12) {
-					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szID;
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szName;
 				}
 			}
 			break;
@@ -941,7 +926,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szSecondValue;
 				}
 				else if (compareRare == (UINT_PTR)IDC_MAIN_LISTVIEW12) {
-					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szType;
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szID;
 				}
 			}
 			break;
@@ -954,7 +939,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					plvdi->item.pszText = EntrysList[plvdi->item.iItem].szThirdValue;
 				}
 				else if (peoplesPoo == 2) {
-
+					plvdi->item.pszText = PropertiesList[plvdi->item.iItem].szTypeDisp;
 				}
 			}
 			break;
@@ -964,7 +949,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			return TRUE;
 		}
-		// More notifications...
+
 		case NM_RETURN:
 		{
 			LPNMHDR lpnmh = (LPNMHDR)lParam;
@@ -999,7 +984,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					SelectedProperty = getTheSelected;
 					setSubclassEdit(editLolz, lolProp);
 					Edit_Enable(editLolz, TRUE);
-					Edit_SetText(typeBox, lolProp.szType);
+					Edit_SetText(typeBox, lolProp.szTypeDisp);
 					HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
 					Button_Enable(applyButton, TRUE);
 				}
@@ -1015,7 +1000,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			NMITEMACTIVATE* fartMan = (NMITEMACTIVATE*)lParam;
 			UINT_PTR party = ((LPNMHDR)lParam)->idFrom;
-			//{
 			if((UINT_PTR)IDC_MAIN_LISTVIEW11 == party && fartMan->iItem > -1)
 				{
 					
@@ -1037,11 +1021,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SelectedProperty = fartMan->iItem;
 				setSubclassEdit(editLolz, lolProp);
 				Edit_Enable(editLolz, TRUE);
-				Edit_SetText(typeBox, lolProp.szType);
+				Edit_SetText(typeBox, lolProp.szTypeDisp);
 				HWND applyButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON2);
 				Button_Enable(applyButton, TRUE);
-				//
-				//SendMessage(editLolz, WM_ENABLE, TRUE, (LPARAM)TRUE);
 			}
 			return TRUE;
 		

@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <tchar.h>
-
+#include "DocumentReader.h"
 
 
 typedef unsigned char u8;
@@ -71,5 +71,5 @@ struct IFWhole{
     std::vector<IFItem> ItemsLolz;
 };
 
-BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName);
+BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName, std::vector<DocumentReader::DocumentItem> &DocInit);
 BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName);
