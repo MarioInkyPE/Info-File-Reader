@@ -22,6 +22,7 @@ HWND				CreateListView(HWND);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	PanelLol(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	SearchWindow(HWND, UINT, WPARAM, LPARAM);
 void				HandleWM_NOTIFY(LPARAM);
 BOOL InsertListViewItems(HWND, int);
 
@@ -806,6 +807,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					WriteInfoFile(OpenedFile, (LPWSTR)szFileName);
 					// Do something usefull with the filename stored in szFileName 
 				}
+				break;
 			}
 			case IDC_MAIN_BUTTON1:
 			{
@@ -863,6 +865,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						ListView_Update(listLol1, i);
 					}
 				}
+				break;
+			}
+			case ID_EDIT_SEARCH:
+			{
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_SEARCHDIALOG), hWnd, SearchWindow);
 				break;
 			}
             default:
@@ -1123,6 +1130,90 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		return (INT_PTR)TRUE;
+	}
+	case WM_SIZE:
+	{
+		HWND hEdit;
+		RECT rcClient;
+
+		GetClientRect(hDlg, &rcClient);
+
+		hEdit = GetDlgItem(hDlg, IDD_SEARCHDIALOG);
+		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right, rcClient.bottom, SWP_NOZORDER);
+	}
+	break;
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+			case IDC_RADIO1:
+			{
+				// load the combobox with item list.  
+				// Send a CB_ADDSTRING message to load each item
+				HWND hWndComboBox = GetDlgItem(hDlg, IDC_SEARCHCOMBO1);
+				TCHAR Planets[9][10] =
+				{
+					TEXT("Mercury"), TEXT("Venus"), TEXT("Terra"), TEXT("Mars"),
+					TEXT("Jupiter"), TEXT("Saturn"), TEXT("Uranus"), TEXT("Neptune"),
+					TEXT("Pluto??")
+				};
+
+				TCHAR A[16];
+				int  k = 0;
+
+				memset(&A, 0, sizeof(A));
+				for (k = 0; k <= 8; k += 1)
+				{
+					wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Planets[k]);
+
+					// Add string to combobox.
+					SendMessage(hWndComboBox, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
+				}
+
+				// Send the CB_SETCURSEL message to display an initial item 
+				//  in the selection field  
+				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)2, (LPARAM)0);
+				ComboBox_Enable(hWndComboBox, TRUE);
+				
+				//SendMessage(hWndComboBox, CB_SETMINVISIBLE, (WPARAM)50, (LPARAM)0);
+				break;
+			}
+			case WM_DESTROY:
+			{
+				EndDialog(hDlg, LOWORD(wParam));
+				return (INT_PTR)TRUE;
+				break;
+			}
+			
+		}
+		}
+	break;
+	case WM_NOTIFY: {
+				switch (((LPNMHDR)lParam)->code)
+				{
+				
+				default:
+					return DefWindowProc(hDlg, message, wParam, lParam);
+				}
+				break;
+			}
+	}
+	
+
+	
+	
+	return (INT_PTR)FALSE;
+}
 
 
 

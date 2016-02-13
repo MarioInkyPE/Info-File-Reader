@@ -93,6 +93,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <EnablePREfast>true</EnablePREfast>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,6 +124,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <EnablePREfast>true</EnablePREfast>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,6 +159,7 @@
     <ClInclude Include="iNfoFR.h" />
     <ClInclude Include="readFile.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SearchItem.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -164,6 +167,7 @@
     <ClCompile Include="DocumentReader.cpp" />
     <ClCompile Include="iNfoFR.cpp" />
     <ClCompile Include="readFile.cpp" />
+    <ClCompile Include="SearchItem.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -175,13 +179,9 @@
     <ResourceCompile Include="iNfoFR.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Downloads\X5v7K54.ico" />
-    <Image Include="..\..\..\..\..\pictures\ico00001.ico" />
-    <Image Include="..\..\..\..\..\Pictures\icon1.ico" />
+    <Image Include="iNfoFR2.ico" />
+    <Image Include="X5v7K54.ico" />
     <Image Include="..\..\..\..\..\Pictures\X5v7K54.png" />
-    <Image Include="favicon.ico" />
-    <Image Include="icon1.ico" />
-    <Image Include="icon2.ico" />
     <Image Include="iNfoFR.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
