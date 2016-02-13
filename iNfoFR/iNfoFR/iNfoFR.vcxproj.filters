@@ -63,25 +63,7 @@
     <Image Include="iNfoFR.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="icon1.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\..\..\..\..\Pictures\X5v7K54.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="favicon.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="icon2.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\..\..\..\..\Pictures\icon1.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\..\..\..\..\pictures\ico00001.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\..\..\..\..\Downloads\X5v7K54.ico">
+    <Image Include="X5v7K54.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

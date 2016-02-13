@@ -153,7 +153,9 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DocumentReader.h" />
+    <ClInclude Include="DocumentReader.h">
+      <DeploymentContent>false</DeploymentContent>
+    </ClInclude>
     <ClInclude Include="iNfoFR.h" />
     <ClInclude Include="readFile.h" />
     <ClInclude Include="Resource.h" />
@@ -161,7 +163,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DocumentReader.cpp" />
+    <ClCompile Include="DocumentReader.cpp">
+      <DeploymentContent>false</DeploymentContent>
+    </ClCompile>
     <ClCompile Include="iNfoFR.cpp" />
     <ClCompile Include="readFile.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -175,13 +179,10 @@
     <ResourceCompile Include="iNfoFR.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\Downloads\X5v7K54.ico" />
-    <Image Include="..\..\..\..\..\pictures\ico00001.ico" />
-    <Image Include="..\..\..\..\..\Pictures\icon1.ico" />
-    <Image Include="..\..\..\..\..\Pictures\X5v7K54.png" />
-    <Image Include="favicon.ico" />
-    <Image Include="icon1.ico" />
-    <Image Include="icon2.ico" />
+    <Image Include="X5v7K54.ico">
+      <DeploymentContent>true</DeploymentContent>
+      <FileType>Resx</FileType>
+    </Image>
     <Image Include="iNfoFR.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
