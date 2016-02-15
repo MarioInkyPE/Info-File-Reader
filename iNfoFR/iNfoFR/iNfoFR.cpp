@@ -1161,6 +1161,12 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				// load the combobox with item list.  
 				// Send a CB_ADDSTRING message to load each item
 				HWND hWndComboBox = GetDlgItem(hDlg, IDC_SEARCHCOMBO1);
+				//Clears all of the combo box
+				int ComboCount = ComboBox_GetCount(hWndComboBox);
+				while (ComboCount > -1)
+				{
+					ComboCount = ComboBox_DeleteString(hWndComboBox, ComboCount - 1);
+				}
 				TCHAR Planets[9][10] =
 				{
 					TEXT("Mercury"), TEXT("Venus"), TEXT("Terra"), TEXT("Mars"),
@@ -1185,7 +1191,6 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)2, (LPARAM)0);
 				ComboBox_Enable(hWndComboBox, TRUE);
 				
-				//SendMessage(hWndComboBox, CB_SETMINVISIBLE, (WPARAM)50, (LPARAM)0);
 				break;
 			}
 			case WM_DESTROY:
