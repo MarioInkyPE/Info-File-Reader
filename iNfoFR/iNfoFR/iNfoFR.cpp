@@ -1130,6 +1130,8 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+
+int selectedSearchProp = -1;
 INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
@@ -1167,20 +1169,37 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				{
 					ComboCount = ComboBox_DeleteString(hWndComboBox, ComboCount - 1);
 				}
-				TCHAR Planets[9][10] =
+
+				ComboBox_Enable(hWndComboBox, FALSE);
+				
+				break;
+			}
+			case IDC_RADIO2:
+			{
+				// load the combobox with item list.  
+				// Send a CB_ADDSTRING message to load each item
+				HWND hWndComboBox = GetDlgItem(hDlg, IDC_SEARCHCOMBO1);
+				//Clears all of the combo box
+				int ComboCount = ComboBox_GetCount(hWndComboBox);
+				while (ComboCount > -1)
 				{
-					TEXT("Mercury"), TEXT("Venus"), TEXT("Terra"), TEXT("Mars"),
-					TEXT("Jupiter"), TEXT("Saturn"), TEXT("Uranus"), TEXT("Neptune"),
-					TEXT("Pluto??")
+					ComboCount = ComboBox_DeleteString(hWndComboBox, ComboCount - 1);
+				}
+
+				TCHAR Types[4][24] = {
+					TEXT("1: String (32 Bytes)"),
+					TEXT("2: String (16 Bytes)"),
+					TEXT("3: Float (4 Bytes)"),
+					TEXT("4: Integer (4 Bytes)")
 				};
 
-				TCHAR A[16];
+				TCHAR A[32];
 				int  k = 0;
 
 				memset(&A, 0, sizeof(A));
-				for (k = 0; k <= 8; k += 1)
+				for (k = 0; k < 4; k += 1)
 				{
-					wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Planets[k]);
+					wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Types[k]);
 
 					// Add string to combobox.
 					SendMessage(hWndComboBox, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
@@ -1188,9 +1207,45 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 				// Send the CB_SETCURSEL message to display an initial item 
 				//  in the selection field  
-				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)2, (LPARAM)0);
+				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				ComboBox_Enable(hWndComboBox, TRUE);
-				
+
+				break;
+			}
+			case IDC_RADIO3:
+			{
+				// load the combobox with item list.  
+				// Send a CB_ADDSTRING message to load each item
+				HWND hWndComboBox = GetDlgItem(hDlg, IDC_SEARCHCOMBO1);
+				//Clears all of the combo box
+				int ComboCount = ComboBox_GetCount(hWndComboBox);
+				while (ComboCount > -1)
+				{
+					ComboCount = ComboBox_DeleteString(hWndComboBox, ComboCount - 1);
+				}
+
+				TCHAR A[64];
+				int  k = 0;
+
+
+				memset(&A, 0, sizeof(A));
+				for (k = 0; k < (int)OpenedFile.header.NumberOfProperties; k += 1)
+				{
+					IFPropertyValue Node = OpenedFile.ItemsLolz[0].TheProperties[k];
+					TCHAR tempID[48];
+
+					_stprintf(tempID, L"%03d: %u (%hs)",k, Node.ValueID, Node.ValueName.c_str());
+					wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)tempID);
+
+					// Add string to combobox.
+					SendMessage(hWndComboBox, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
+				}
+
+				// Send the CB_SETCURSEL message to display an initial item 
+				//  in the selection field  
+				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+				ComboBox_Enable(hWndComboBox, TRUE);
+
 				break;
 			}
 			case WM_DESTROY:
@@ -1206,9 +1261,10 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	case WM_NOTIFY: {
 				switch (((LPNMHDR)lParam)->code)
 				{
-				
-				default:
-					return DefWindowProc(hDlg, message, wParam, lParam);
+				case 12: {
+					break;
+				}
+				return DefWindowProc(hDlg, message, wParam, lParam);
 				}
 				break;
 			}
