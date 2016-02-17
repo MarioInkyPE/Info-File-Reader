@@ -5,8 +5,9 @@
 #include "iNfoFR.h"
 #include <commctrl.h>
 #include <vector>
-#include "readFile.h"
 #include "DocumentReader.h"
+#include "readFile.h"
+#include "SearchItem.h"
 
 #define MAX_LOADSTRING 100
 
@@ -730,6 +731,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						PropertiesList.clear();
 						changeEntryList();
 						InsertListViewItems(poopHead, (int)OpenedFile.header.NumberOfItems);
+						EnableMenuItem(GetMenu(hWnd), ID_EDIT_SEARCH, MF_ENABLED);
 					}
 					else {
 						MessageBox(hWnd, L"File Did not Open Fully", L"ERROR", MB_OK | MB_ICONERROR);
@@ -1130,8 +1132,91 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+//dasfgdasf
+//adsfasdfasddddddddd
+//
+//afdasdffad
+//fdasssssssssss
+//dafsssssssssss
 
 int selectedSearchProp = -1;
+int selectedSearchItem = -1;
+std::vector<ENTRYLISTINFO> EntrysListSearch;
+std::vector<PROPERTYLISTINFO> PropertiesListSearch;
+
+void changePropListSearch(int item, std::vector<int> locations) {
+	PropertiesListSearch.clear();
+	for (int i = 0; i < (int)OpenedFile.header.NumberOfProperties; ++i) {
+		PROPERTYLISTINFO theInfo;
+		IFPropertyValue currentProp = OpenedFile.ItemsLolz[locations[item]].TheProperties[i];
+		_stprintf_s(theInfo.szID, L"%u", currentProp.ValueID);
+		_stprintf_s(theInfo.szType, _T("%hs"), currentProp.valueType.c_str());
+		_stprintf_s(theInfo.szName, _T("%hs"), currentProp.ValueName.c_str());
+		if (currentProp.valueType == "s32") {
+			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.InfoString);
+			_stprintf_s(theInfo.szTypeDisp, L"String (size 32)");
+		}
+		else if (currentProp.valueType == "s16") {
+			_stprintf_s(theInfo.szValue, _T("%hs"), currentProp.TableString);
+			_stprintf_s(theInfo.szTypeDisp, L"String (size 16)");
+		}
+		else if (currentProp.valueType == "f4") {
+			_stprintf_s(theInfo.szValue, _T("%f"), currentProp.FloatLol);
+			_stprintf_s(theInfo.szTypeDisp, L"Float (size 4)");
+		}
+		else if (currentProp.valueType == "i4") {
+			_stprintf_s(theInfo.szValue, _T("%u"), currentProp.IntegerLol);
+			_stprintf_s(theInfo.szTypeDisp, L"Integer/Other (size 4)");
+		}
+
+		PropertiesListSearch.push_back(theInfo);
+
+	}
+	//peoplesPoo = 2;
+}
+
+void changeEntryListSearch(std::vector<int> locations) {
+	EntrysListSearch.clear();
+	for (int i = 0; i < (int)locations.size(); ++i) {
+		ENTRYLISTINFO theInfo;
+		IFItem currentEnt = OpenedFile.ItemsLolz[locations[i]];
+		_stprintf_s(theInfo.szNumber, L"%d", locations[i]);
+		for (int j = 0; j < 3 && j < (int)OpenedFile.header.NumberOfProperties; ++j) {
+			TCHAR canada[32];
+			IFPropertyValue checkSam = currentEnt.TheProperties[j];
+			if (checkSam.valueType == "s32") {
+				_stprintf_s(canada, _T("%hs"), checkSam.InfoString);
+			}
+			else if (checkSam.valueType == "s16") {
+				_stprintf_s(canada, _T("%hs"), checkSam.TableString);
+			}
+			else if (checkSam.valueType == "f4") {
+				_stprintf_s(canada, _T("%f"), checkSam.FloatLol);
+			}
+			else if (checkSam.valueType == "i4") {
+				_stprintf_s(canada, _T("%u"), checkSam.IntegerLol);
+			}
+
+			if (j == 0) {
+				_stprintf_s(theInfo.szFirstValue, L"%s", canada);
+			}
+			else if (j == 1) {
+				_stprintf_s(theInfo.szSecondValue, L"%s", canada);
+			}
+			else if (j == 2) {
+				_stprintf_s(theInfo.szThirdValue, L"%s", canada);
+			}
+		}
+		EntrysListSearch.push_back(theInfo);
+
+	}
+	//peoplesPoo = 1;
+}
+
+std::vector<int> locations;
+//fgsdddddd
+//gsfdddddddddddddddsdgsdfg
+//Wow, searching, IN A WINDOW!!!!!!!!!
 INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
@@ -1139,6 +1224,23 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 	case WM_INITDIALOG:
 	{
+		std::vector<LPWSTR> Bloxxer1Columns;
+		Bloxxer1Columns.push_back(L"Item #");
+		Bloxxer1Columns.push_back(L"First Value");
+		Bloxxer1Columns.push_back(L"Second Value");
+		Bloxxer1Columns.push_back(L"Third Value");
+
+		std::vector<LPWSTR> Bloxxer2Columns;
+		Bloxxer2Columns.push_back(L"Property Name");
+		Bloxxer2Columns.push_back(L"Property Value");
+		Bloxxer2Columns.push_back(L"Property ID#");
+		Bloxxer2Columns.push_back(L"Property Type");
+
+		HWND theSearchList1 = GetDlgItem(hDlg, IDC_SEARCHLIST1);
+		HWND theSearchList2 = GetDlgItem(hDlg, IDC_SEARCHLIST2);
+
+		InitListViewColumns(theSearchList1, Bloxxer1Columns);
+		InitListViewColumns(theSearchList2, Bloxxer2Columns);
 		return (INT_PTR)TRUE;
 	}
 	case WM_SIZE:
@@ -1171,7 +1273,15 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				}
 
 				ComboBox_Enable(hWndComboBox, FALSE);
-				
+				HWND paperMario = GetDlgItem(hDlg, IDC_SEARCHBUTTON1);
+				HWND SearchBox = GetDlgItem(hDlg, IDC_SEARCHEDIT1);
+				if (Edit_GetTextLength(SearchBox) > 0) {
+					Button_Enable(paperMario, TRUE);
+				}
+				else {
+					Button_Enable(paperMario, FALSE);
+				}
+
 				break;
 			}
 			case IDC_RADIO2:
@@ -1210,6 +1320,14 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				ComboBox_Enable(hWndComboBox, TRUE);
 
+				HWND paperMario = GetDlgItem(hDlg, IDC_SEARCHBUTTON1);
+				HWND SearchBox = GetDlgItem(hDlg, IDC_SEARCHEDIT1);
+				if (Edit_GetTextLength(SearchBox) > 0) {
+					Button_Enable(paperMario, TRUE);
+				}
+				else {
+					Button_Enable(paperMario, FALSE);
+				}
 				break;
 			}
 			case IDC_RADIO3:
@@ -1246,6 +1364,98 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 				ComboBox_Enable(hWndComboBox, TRUE);
 
+				HWND paperMario = GetDlgItem(hDlg, IDC_SEARCHBUTTON1);
+				HWND SearchBox = GetDlgItem(hDlg, IDC_SEARCHEDIT1);
+				if (Edit_GetTextLength(SearchBox) > 0) {
+					Button_Enable(paperMario, TRUE);
+				}
+				else {
+					Button_Enable(paperMario, FALSE);
+				}
+				break;
+			}
+			case IDC_SEARCHEDIT1:
+			{
+				HWND paperMario = GetDlgItem(hDlg, IDC_SEARCHBUTTON1);
+				HWND SearchBox = GetDlgItem(hDlg, IDC_SEARCHEDIT1);
+				HWND Radio1 = GetDlgItem(hDlg, IDC_RADIO1);
+				HWND Radio2 = GetDlgItem(hDlg, IDC_RADIO2);
+				HWND Radio3 = GetDlgItem(hDlg, IDC_RADIO3);
+
+				int searchLength = Edit_GetTextLength(SearchBox);
+				if (searchLength > 0 && (Button_GetCheck(Radio1) == BST_CHECKED || Button_GetCheck(Radio2) == BST_CHECKED || Button_GetCheck(Radio3) == BST_CHECKED)) {
+					Button_Enable(paperMario, TRUE);
+				}
+				else {
+					Button_Enable(paperMario, FALSE);
+				}
+				break;
+			}
+			case IDC_SEARCHBUTTON1:
+			{
+				locations.clear();
+				SearchItem bobsy = SearchItem::SearchItem();
+				HWND Radio1 = GetDlgItem(hDlg, IDC_RADIO1);
+				HWND Radio2 = GetDlgItem(hDlg, IDC_RADIO2);
+				HWND Radio3 = GetDlgItem(hDlg, IDC_RADIO3);
+				HWND SearchBox = GetDlgItem(hDlg, IDC_SEARCHEDIT1);
+				HWND ComboBreak = GetDlgItem(hDlg, IDC_SEARCHCOMBO1);
+				
+				TCHAR tempGetText[33];
+				Edit_GetText(SearchBox, tempGetText, 32);
+				std::string keyword = MBFromW(tempGetText, CP_ACP);
+				BOOL hasStuff = FALSE;
+				if (Button_GetCheck(Radio1) == BST_CHECKED) {
+					hasStuff = bobsy.FindAllProperties(keyword, locations, OpenedFile);
+				}
+				else if (Button_GetCheck(Radio2) == BST_CHECKED) {
+					TCHAR tempGetCombo[65];
+					ComboBox_GetText(ComboBreak, tempGetCombo, 64);
+					std::string type = MBFromW(tempGetCombo, CP_ACP);
+					int which1 = std::stoi(type.substr(0, 1));
+					std::string realType = "";
+					if (which1 == 1) {
+						realType = "s32";
+					}
+					else if (which1 == 2) {
+						realType = "s16";
+					}
+					else if (which1 == 3) {
+						realType == "f4";
+					}
+					else if (which1 == 4) {
+						realType == "i4";
+					}
+					hasStuff = bobsy.FindGroupProperties(keyword, locations, OpenedFile, realType);
+				}
+				else if (Button_GetCheck(Radio3) == BST_CHECKED) {
+					TCHAR tempGetCombo[65];
+					ComboBox_GetText(ComboBreak, tempGetCombo, 64);
+					std::string type = MBFromW(tempGetCombo, CP_ACP);
+					int propIndex = std::stoi(type.substr(0, 3));
+					hasStuff = bobsy.FindSingleProperty(keyword, locations, OpenedFile, OpenedFile.Nodes[propIndex].PropID);
+				}
+				
+
+				if (hasStuff == TRUE) {
+					
+					HWND theSearchList1 = GetDlgItem(hDlg, IDC_SEARCHLIST1);
+					HWND theSearchList2 = GetDlgItem(hDlg, IDC_SEARCHLIST2);
+					ListView_DeleteAllItems(theSearchList1);
+					ListView_DeleteAllItems(theSearchList2);
+					changeEntryListSearch(locations);
+					InsertListViewItems(theSearchList1, (int)locations.size());
+					
+				}
+				
+				break;
+			}
+			case IDC_BUTTON_SEARCH_OK2: {
+				if (selectedSearchItem > -1) {
+					SelectedItem = selectedSearchItem;
+					EndDialog(hDlg, LOWORD(wParam));
+					return (INT_PTR)TRUE;
+				}
 				break;
 			}
 			case WM_DESTROY:
@@ -1261,8 +1471,109 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	case WM_NOTIFY: {
 				switch (((LPNMHDR)lParam)->code)
 				{
-				case 12: {
+				case LVN_GETDISPINFO: {
+					NMLVDISPINFO* plvdi = (NMLVDISPINFO*)lParam;
+					UINT_PTR compareRare = ((LPNMHDR)lParam)->idFrom;
+					switch (plvdi->item.iSubItem)
+					{
+					case 0:
+					{
+						if (compareRare == 0) {
+							plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szKind;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST1) {
+							plvdi->item.pszText = EntrysListSearch[plvdi->item.iItem].szNumber;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST2) {
+							plvdi->item.pszText = PropertiesListSearch[plvdi->item.iItem].szName;
+						}
+					}
 					break;
+					case 1:
+					{
+						if (compareRare == 0) {
+							plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szBreed;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST1) {
+							plvdi->item.pszText = EntrysListSearch[plvdi->item.iItem].szFirstValue;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST2) {
+							plvdi->item.pszText = PropertiesListSearch[plvdi->item.iItem].szValue;
+						}
+					}
+					break;
+					case 2:
+					{
+						if (compareRare == 0) {
+							plvdi->item.pszText = rgPetInfo[plvdi->item.iItem].szPrice;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST1) {
+							plvdi->item.pszText = EntrysListSearch[plvdi->item.iItem].szSecondValue;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST2) {
+							plvdi->item.pszText = PropertiesListSearch[plvdi->item.iItem].szID;
+						}
+					}
+					break;
+					case 3:
+					{
+						if (compareRare == 0) {
+
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST1) {
+							plvdi->item.pszText = EntrysListSearch[plvdi->item.iItem].szThirdValue;
+						}
+						else if (compareRare == (UINT_PTR)IDC_SEARCHLIST2) {
+							plvdi->item.pszText = PropertiesListSearch[plvdi->item.iItem].szTypeDisp;
+						}
+					}
+					break;
+
+					default:
+						break;
+					}
+					return TRUE;
+				}
+				case NM_DBLCLK: {
+					NMITEMACTIVATE* fartMan = (NMITEMACTIVATE*)lParam;
+					UINT_PTR party = ((LPNMHDR)lParam)->idFrom;
+					if ((UINT_PTR)IDC_SEARCHLIST1 == party && fartMan->iItem > -1)
+					{
+						HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
+						selectedSearchItem = fartMan->iItem;
+						ListView_DeleteAllItems(mainLolz);
+						changePropListSearch(fartMan->iItem, locations);
+						InsertListViewItems(mainLolz, PropertiesListSearch.size());
+					}
+					return TRUE;
+					break;
+				}
+				case NM_RETURN: {
+
+					LPNMHDR lpnmh = (LPNMHDR)lParam;
+					switch (lpnmh->idFrom)
+					{
+					case IDC_SEARCHLIST1:
+					{
+
+						HWND lolList = GetDlgItem(hDlg, IDC_SEARCHLIST1);
+						int getTheSelected = ListView_GetSelectionMark(lolList);
+						if (getTheSelected > -1) {
+
+							selectedSearchItem = getTheSelected;
+							HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
+							ListView_DeleteAllItems(mainLolz);
+							changePropListSearch(getTheSelected, locations);
+							InsertListViewItems(mainLolz, PropertiesListSearch.size());
+						}
+						break;
+					}
+					default:
+						break;
+					}
+
+					return TRUE;
+					//break;
 				}
 				return DefWindowProc(hDlg, message, wParam, lParam);
 				}

@@ -2,6 +2,9 @@
 #include <string>
 #include "readFile.h"
 #pragma once
+
+#ifndef SEARCHITEM_H
+#define SEARCHITEM_H
 class SearchItem
 {
 public:
@@ -12,4 +15,5 @@ public:
 	BOOL FindSingleProperty(std::string keyword, std::vector<int> &results, IFWhole fileToSearch, u32 propID);
 
 };
+#endif
 
