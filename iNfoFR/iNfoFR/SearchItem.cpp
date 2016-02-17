@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "SearchItem.h"
-
+//#include "readFile.h"
 
 SearchItem::SearchItem()
 {
@@ -12,7 +12,7 @@ SearchItem::~SearchItem()
 }
 
 BOOL isFloat(std::string floatString) {
-	for (int i = 0; i < floatString.length(); ++i) {
+	for (int i = 0; i < (int)floatString.length(); ++i) {
 		if (!((floatString[i] >= '0' && floatString[i] <= '9') || floatString[i] == '.' || (floatString[i] == '-' && i == 0))) {
 			return FALSE;
 		}
@@ -21,7 +21,7 @@ BOOL isFloat(std::string floatString) {
 }
 
 BOOL isInt(std::string intString) {
-	for (int i = 0; i < intString.length(); ++i) {
+	for (int i = 0; i < (int)intString.length(); ++i) {
 		if (!(intString[i] >= '0' && intString[i] <= '9')) {
 			return FALSE;
 		}
@@ -32,9 +32,9 @@ BOOL isInt(std::string intString) {
 BOOL SearchItem::FindAllProperties(std::string keyword, std::vector<int> &results, IFWhole fileToSearch)
 {
 	BOOL isGood = FALSE;
-	for (int i = 0; i < fileToSearch.header.NumberOfItems; ++i) {
+	for (int i = 0; i < (int)fileToSearch.header.NumberOfItems; ++i) {
 		BOOL toAdd = FALSE;
-		for (int j = 0; j < fileToSearch.header.NumberOfProperties; ++j) {
+		for (int j = 0; j < (int)fileToSearch.header.NumberOfProperties; ++j) {
 			IFPropertyValue tempPropLook = fileToSearch.ItemsLolz[i].TheProperties[j];
 
 			if (tempPropLook.valueType == "s32") {
@@ -76,9 +76,9 @@ BOOL SearchItem::FindAllProperties(std::string keyword, std::vector<int> &result
 BOOL SearchItem::FindGroupProperties(std::string keyword, std::vector<int>& results, IFWhole fileToSearch, std::string groupType)
 {
 	BOOL isGood = FALSE;
-	for (int i = 0; i < fileToSearch.header.NumberOfItems; ++i) {
+	for (int i = 0; i < (int)fileToSearch.header.NumberOfItems; ++i) {
 		BOOL toAdd = FALSE;
-		for (int j = 0; j < fileToSearch.header.NumberOfProperties; ++j) {
+		for (int j = 0; j < (int)fileToSearch.header.NumberOfProperties; ++j) {
 			IFPropertyValue tempPropLook = fileToSearch.ItemsLolz[i].TheProperties[j];
 
 			if (tempPropLook.valueType == "s32" && groupType == "s32") {
@@ -120,9 +120,9 @@ BOOL SearchItem::FindGroupProperties(std::string keyword, std::vector<int>& resu
 BOOL SearchItem::FindSingleProperty(std::string keyword, std::vector<int>& results, IFWhole fileToSearch, u32 propID)
 {
 	BOOL isGood = FALSE;
-	for (int i = 0; i < fileToSearch.header.NumberOfItems; ++i) {
+	for (int i = 0; i < (int)fileToSearch.header.NumberOfItems; ++i) {
 		BOOL toAdd = FALSE;
-		for (int j = 0; j < fileToSearch.header.NumberOfProperties; ++j) {
+		for (int j = 0; j < (int)fileToSearch.header.NumberOfProperties; ++j) {
 			IFPropertyValue tempPropLook = fileToSearch.ItemsLolz[i].TheProperties[j];
 			if (tempPropLook.ValueID == propID) {
 				if (tempPropLook.valueType == "s32") {

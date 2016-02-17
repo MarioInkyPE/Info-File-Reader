@@ -27,7 +27,9 @@
 #include <windows.h>
 #include <tchar.h>
 #include "DocumentReader.h"
-
+//#include "SearchItem.h"
+#ifndef READFILE_H
+#define READFILE_H
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -73,3 +75,5 @@ struct IFWhole{
 
 BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName, std::vector<DocumentReader::DocumentItem> &DocInit);
 BOOL WriteInfoFile(IFWhole &Bobby, LPCTSTR pszFileName);
+
+#endif
