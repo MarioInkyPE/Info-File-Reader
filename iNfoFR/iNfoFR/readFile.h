@@ -60,6 +60,7 @@ struct IFPropertyValue{
     char InfoString[32];
     u32 IntegerLol;
     float FloatLol;
+	bool isLinked = false;
 };
 
 struct IFItem{

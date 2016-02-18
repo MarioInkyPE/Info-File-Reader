@@ -270,6 +270,9 @@ std::vector<ENTRYLISTINFO> EntrysList;
 std::vector<PROPERTYLISTINFO> PropertiesList;
 int SelectedProperty;
 int SelectedItem;
+int selectedSearchProp = -1;
+int selectedSearchItem = -1;
+BOOL isSearchGood = FALSE;
 
 PETINFO rgPetInfo[5] =
 {
@@ -772,6 +775,41 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						else if (!_tcscmp(lolProp.szType, _T("s32"))) {
 								std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].InfoString, newMe.c_str());
 						}
+						if (OpenedFile.ItemsLolz[SelectedItem].TheProperties[SelectedProperty].isLinked == true) {
+							for (int i = 0; i < (int)OpenedFile.header.NumberOfProperties; ++i) {
+								if (OpenedFile.ItemsLolz[SelectedItem].TheProperties[i].isLinked == true) {
+									PROPERTYLISTINFO lolProp2 = PropertiesList[i];
+									Edit_GetText(editLolz, PropertiesList[i].szValue, 31);
+
+									std::string newMe = MBFromW(PropertiesList[i].szValue, CP_ACP);
+									if (!_tcscmp(lolProp2.szType, _T("f4"))) {
+										OpenedFile.ItemsLolz[SelectedItem].TheProperties[i].FloatLol = std::stof(newMe);
+									}
+									else if (!_tcscmp(lolProp2.szType, _T("i4"))) {
+										OpenedFile.ItemsLolz[SelectedItem].TheProperties[i].IntegerLol = (u32)std::stoul(newMe);
+									}
+									else if (!_tcscmp(lolProp2.szType, _T("s16"))) {
+										std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[i].TableString, newMe.c_str());
+									}
+									else if (!_tcscmp(lolProp2.szType, _T("s32"))) {
+										std::strcpy(OpenedFile.ItemsLolz[SelectedItem].TheProperties[i].InfoString, newMe.c_str());
+									}
+
+									ListView_Update(lolList2, i);
+
+									if (i == 0) {
+										_stprintf(EntrysList[SelectedItem].szFirstValue, L"%s", PropertiesList[i].szValue);
+									}
+									else if (i == 1) {
+										_stprintf(EntrysList[SelectedItem].szSecondValue, L"%s", PropertiesList[i].szValue);
+									}
+									else if (i == 2) {
+										_stprintf(EntrysList[SelectedItem].szThirdValue, L"%s", PropertiesList[i].szValue);
+									}
+									ListView_Update(lolList1, SelectedItem);
+								}
+							}
+						}
 
 						ListView_Update(lolList2, SelectedProperty);
 						
@@ -872,6 +910,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case ID_EDIT_SEARCH:
 			{
 				DialogBox(hInst, MAKEINTRESOURCE(IDD_SEARCHDIALOG), hWnd, SearchWindow);
+				
+				if (selectedSearchItem > -1 && isSearchGood == TRUE) {
+					HWND listLol1 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+					ListView_SetSelectionMark(listLol1, selectedSearchItem);
+					ListView_SetItemState(listLol1, selectedSearchItem, LVIS_FOCUSED | LVIS_SELECTED, LVIS_SELECTED | LVIS_CUT);
+					//ListView_SetHotItem(listLol1, selectedSearchItem);
+					ListView_EnsureVisible(listLol1, selectedSearchItem, FALSE);
+					HWND mainLolz = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW12);
+					ListView_DeleteAllItems(mainLolz);
+					SelectedItem = selectedSearchItem;
+					changePropList(selectedSearchItem);
+					InsertListViewItems(mainLolz, PropertiesList.size());
+				}
 				break;
 			}
             default:
@@ -1139,8 +1190,7 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 //fdasssssssssss
 //dafsssssssssss
 
-int selectedSearchProp = -1;
-int selectedSearchItem = -1;
+
 std::vector<ENTRYLISTINFO> EntrysListSearch;
 std::vector<PROPERTYLISTINFO> PropertiesListSearch;
 
@@ -1241,6 +1291,9 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		InitListViewColumns(theSearchList1, Bloxxer1Columns);
 		InitListViewColumns(theSearchList2, Bloxxer2Columns);
+		selectedSearchItem = -1;
+		selectedSearchProp = -1;
+		isSearchGood = FALSE;
 		return (INT_PTR)TRUE;
 	}
 	case WM_SIZE:
@@ -1451,8 +1504,10 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				break;
 			}
 			case IDC_BUTTON_SEARCH_OK2: {
-				if (selectedSearchItem > -1) {
-					SelectedItem = selectedSearchItem;
+				HWND theSearchList1 = GetDlgItem(hDlg, IDC_SEARCHLIST1);
+				if (ListView_GetSelectionMark(theSearchList1) > -1) {
+					SelectedItem = ListView_GetSelectionMark(theSearchList1);
+					isSearchGood = TRUE;
 					EndDialog(hDlg, LOWORD(wParam));
 					return (INT_PTR)TRUE;
 				}
@@ -1540,10 +1595,12 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 					if ((UINT_PTR)IDC_SEARCHLIST1 == party && fartMan->iItem > -1)
 					{
 						HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
-						selectedSearchItem = fartMan->iItem;
+						selectedSearchItem = locations[fartMan->iItem];
 						ListView_DeleteAllItems(mainLolz);
 						changePropListSearch(fartMan->iItem, locations);
 						InsertListViewItems(mainLolz, PropertiesListSearch.size());
+						HWND okButton = GetDlgItem(hDlg, IDC_BUTTON_SEARCH_OK2);
+						Button_Enable(okButton, TRUE);
 					}
 					return TRUE;
 					break;
@@ -1560,11 +1617,13 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 						int getTheSelected = ListView_GetSelectionMark(lolList);
 						if (getTheSelected > -1) {
 
-							selectedSearchItem = getTheSelected;
+							selectedSearchItem = locations[getTheSelected];
 							HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
 							ListView_DeleteAllItems(mainLolz);
 							changePropListSearch(getTheSelected, locations);
 							InsertListViewItems(mainLolz, PropertiesListSearch.size());
+							HWND okButton = GetDlgItem(hDlg, IDC_BUTTON_SEARCH_OK2);
+							Button_Enable(okButton, TRUE);
 						}
 						break;
 					}

@@ -173,6 +173,9 @@ BOOL ReadInfoFile(IFWhole &Bobby, LPCTSTR pathFileName, std::vector<DocumentRead
                                 ReadFile(hFile, &someProperty.IntegerLol, 4, &yoBobby, &overlapped);
                                 toDWORD(someProperty.IntegerLol);
                             }
+							if (!(NodeLol.unknown1 == 0x0000 && NodeLol.unknown2 == 0x0000) && !(NodeLol.unknown2 == 0xFFFF && NodeLol.unknown1 == 0xFFFF)) {
+								someProperty.isLinked = true;
+							}
 							DocumentReader DocFunc = DocumentReader::DocumentReader();
                             someProperty.ValueID = NodeLol.PropID;
 							if (DocInit.size() >= 1) {
