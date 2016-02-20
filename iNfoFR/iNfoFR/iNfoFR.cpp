@@ -703,7 +703,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_SIZE:
 	{
-		HWND hEdit, Bloxxer2, Button1Thing, EditBox1, ApplyButton, TextBox1, TextBox12, DelButton;
+		HWND hEdit, Bloxxer2, Button1Thing, EditBox1, ApplyButton, TextBox1, TextBox12, DelButton, NewButton;
 		RECT rcClient;
 
 		GetClientRect(hWnd, &rcClient);
@@ -716,6 +716,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		TextBox1 = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP11);
 		TextBox12 = GetDlgItem(hWnd, IDC_MAIN_TEXTDISP21);
 		DelButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON3DEL);
+		NewButton = GetDlgItem(hWnd, IDC_MAIN_BUTTON4NEW);
+
 
 		SetWindowPos(hEdit, NULL, 0, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
 		SetWindowPos(Bloxxer2, NULL, rcClient.right / 3, 0, rcClient.right / 3, rcClient.bottom - 70, SWP_NOZORDER);
@@ -725,6 +727,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		SetWindowPos(TextBox1, NULL,(rcClient.right / 3) * 2 + 20, rcClient.top + 50, (rcClient.right / 3) / 2 - 25, 25, SWP_NOZORDER);
 		SetWindowPos(TextBox12, NULL, (rcClient.right / 3) * 2 + (rcClient.right / 3) / 2 + 5, rcClient.top + 50, rcClient.right - 25, 25, SWP_NOZORDER);
 		SetWindowPos(DelButton, NULL, 120, (rcClient.bottom) - 60, 100, 50, SWP_NOZORDER);
+		SetWindowPos(NewButton, NULL, 230, (rcClient.bottom) - 60, 100, 50, SWP_NOZORDER);
 
 	}
 		break;
