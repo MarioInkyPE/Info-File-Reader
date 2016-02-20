@@ -135,10 +135,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define IDC_MAIN_TEXTDISP22 1481
 #define IDC_MAIN_TEXTDISP23 1482
 #define IDC_MAIN_BUTTON3DEL 1483
+#define IDC_MAIN_BUTTON4NEW 1484
 #define IDSC_MAIN_EDITFLOAT 2472
 #define IDSC_MAIN_EDITINT 2473
 #define IDSC_MAIN_EDITSTRING32 2474
 #define IDSC_MAIN_EDITSTRING16 2475
+#define IDSC_MAIN_LISTRETURNDIALOG 2476
 #define BUTTON_APPLY 2601
 
 int peoplesPoo = 0;
@@ -546,6 +548,30 @@ void ClearEditArea(HWND hWnd, HWND editLolz) {
 	Button_Enable(applyButton, FALSE);
 }
 
+std::string TstrToStdStr2(LPCTSTR psz)
+{
+	std::string s;
+	if (psz == NULL) return s;
+	if (sizeof(TCHAR) == sizeof(wchar_t))
+	{
+		std::wstring ws = psz;
+		int wlen = (int)ws.length();
+		// get needed space
+		int slen = (int)wcstombs(NULL, &ws[0], 2 * wlen);
+
+		if (slen > 0)
+		{
+			s.resize(slen, '\0');
+			wcstombs(&s[0], &ws[0], slen);
+		}
+	}
+	else
+	{
+		//s = psz;
+	}
+	return s;
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -619,6 +645,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				50,        // Button height
 				hWnd,     // Parent window
 				(HMENU)IDC_MAIN_BUTTON3DEL,       // No menu.
+				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+				NULL);      // Pointer not needed.
+
+			HWND hwndNewButton = CreateWindow(
+				L"BUTTON",  // Predefined class; Unicode assumed 
+				L"New Item",      // Button text 
+				WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | WS_DISABLED,   // Styles 
+				230,         // x position  
+				(rcClient.bottom) - 60,         // y position 
+				100,        // Button width
+				50,        // Button height
+				hWnd,     // Parent window
+				(HMENU)IDC_MAIN_BUTTON4NEW,       // No menu.
 				(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 				NULL);      // Pointer not needed.
 			
@@ -735,6 +774,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						changeEntryList();
 						InsertListViewItems(poopHead, (int)OpenedFile.header.NumberOfItems);
 						EnableMenuItem(GetMenu(hWnd), ID_EDIT_SEARCH, MF_ENABLED);
+						Button_Enable(GetDlgItem(hWnd, IDC_MAIN_BUTTON4NEW), TRUE);
 					}
 					else {
 						MessageBox(hWnd, L"File Did not Open Fully", L"ERROR", MB_OK | MB_ICONERROR);
@@ -889,6 +929,99 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					EntrysList.push_back(theInfo);
 					InsertListViewItems(listLol1, 1);
 				}
+				break;
+			}
+			case IDC_MAIN_BUTTON4NEW:
+			{
+				HWND listLol1 = GetDlgItem(hWnd, IDC_MAIN_LISTVIEW11);
+				int lolPoo = ListView_GetItemCount(listLol1);
+					IFItem copyAp;
+					for (int i = 0; i < (int)OpenedFile.header.NumberOfProperties; ++i) {
+						IFPropertyValue someProperty;
+						IFMainProperty NodeLol = OpenedFile.Nodes[i];
+						if (NodeLol.PropCatagory == 1) {
+							TCHAR candySam[300] = L"";
+							SendMessage(hWnd, WM_GETTEXT, 300, (LPARAM)(candySam));
+							std::string endString = TstrToStdStr2(candySam);
+
+							if (endString.substr(endString.length() - 4 - 9, endString.length() - 9) == "info") {
+								someProperty.valueType = "s32";
+								
+								std::strcpy(someProperty.InfoString, "(null)");
+								//ReadFile(hFile, &someProperty.InfoString, 32, &yoBobby, &overlapped);
+							}
+							else {
+								someProperty.valueType = "s16";
+								std::strcpy(someProperty.TableString, "(null)");
+								//ReadFile(hFile, &someProperty.TableString, 16, &yoBobby, &overlapped);
+							}
+						}
+						else if (NodeLol.PropCatagory == 2) {
+							someProperty.valueType = "f4";
+							someProperty.FloatLol = 0.0;
+							/*ReadFile(hFile, &someProperty.rawValue, 4, &yoBobby, &overlapped);
+							u8 * ptr = someProperty.rawValue;
+							std::reverse(ptr, ptr + 4);
+							someProperty.FloatLol = *reinterpret_cast<float*>(ptr);
+							std::reverse(ptr, ptr + 4);*/
+						}
+						else {
+							someProperty.valueType = "i4";
+							someProperty.IntegerLol = 0;
+							//ReadFile(hFile, &someProperty.IntegerLol, 4, &yoBobby, &overlapped);
+							//toDWORD(someProperty.IntegerLol);
+						}
+						if (!(NodeLol.unknown1 == 0x0000 && NodeLol.unknown2 == 0x0000) && !(NodeLol.unknown2 == 0xFFFF && NodeLol.unknown1 == 0xFFFF)) {
+							someProperty.isLinked = true;
+						}
+						DocumentReader DocFunc = DocumentReader::DocumentReader();
+						someProperty.ValueID = NodeLol.PropID;
+						if (DocumentationList.size() >= 1) {
+							int GoodDoc = DocFunc.IDMatch(DocumentationList, NodeLol.PropID);
+							if (GoodDoc > -1) {
+								someProperty.ValueName = DocumentationList[GoodDoc].Name;
+							}
+							else {
+								someProperty.ValueName = "(Undocumented)";
+							}
+						}
+						someProperty.theResourceStuff = NodeLol;
+						copyAp.TheProperties.push_back(someProperty);
+					}
+					OpenedFile.ItemsLolz.push_back(copyAp);
+					OpenedFile.header.NumberOfItems += 1;
+					ENTRYLISTINFO theInfo;
+					IFItem currentEnt = copyAp;
+					_stprintf_s(theInfo.szNumber, L"%d", OpenedFile.header.NumberOfItems - 1);
+					for (int j = 0; j < 3 && j < (int)OpenedFile.header.NumberOfProperties; ++j) {
+						TCHAR canada[32];
+						IFPropertyValue checkSam = currentEnt.TheProperties[j];
+						if (checkSam.valueType == "s32") {
+							_stprintf_s(canada, _T("%hs"), checkSam.InfoString);
+						}
+						else if (checkSam.valueType == "s16") {
+							_stprintf_s(canada, _T("%hs"), checkSam.TableString);
+						}
+						else if (checkSam.valueType == "f4") {
+							_stprintf_s(canada, _T("%f"), checkSam.FloatLol);
+						}
+						else if (checkSam.valueType == "i4") {
+							_stprintf_s(canada, _T("%u"), checkSam.IntegerLol);
+						}
+
+						if (j == 0) {
+							_stprintf_s(theInfo.szFirstValue, L"%s", canada);
+						}
+						else if (j == 1) {
+							_stprintf_s(theInfo.szSecondValue, L"%s", canada);
+						}
+						else if (j == 2) {
+							_stprintf_s(theInfo.szThirdValue, L"%s", canada);
+						}
+					}
+					EntrysList.push_back(theInfo);
+					InsertListViewItems(listLol1, 1);
+				
 				break;
 			}
 			case IDC_MAIN_BUTTON3DEL:
@@ -1194,6 +1327,8 @@ INT_PTR CALLBACK PanelLol(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 std::vector<ENTRYLISTINFO> EntrysListSearch;
 std::vector<PROPERTYLISTINFO> PropertiesListSearch;
 
+
+
 void changePropListSearch(int item, std::vector<int> locations) {
 	PropertiesListSearch.clear();
 	for (int i = 0; i < (int)OpenedFile.header.NumberOfProperties; ++i) {
@@ -1264,6 +1399,39 @@ void changeEntryListSearch(std::vector<int> locations) {
 }
 
 std::vector<int> locations;
+HWND popupSearchWindow = (HWND)NULL;
+
+LRESULT CALLBACK ListViewReturnWindowProc(
+	HWND hwnd,
+	UINT uMsg,
+	WPARAM wParam,
+	LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+	if (uMsg == WM_GETDLGCODE)
+	{
+
+		// Make sure we only allow specific characters
+		if (wParam == VK_RETURN && popupSearchWindow != (HWND)NULL)
+		{
+			HWND lolList = GetDlgItem(popupSearchWindow, IDC_SEARCHLIST1);
+			int getTheSelected = ListView_GetSelectionMark(lolList);
+			if (getTheSelected > -1) {
+
+				selectedSearchItem = locations[getTheSelected];
+				HWND mainLolz = GetDlgItem(popupSearchWindow, IDC_SEARCHLIST2);
+				ListView_DeleteAllItems(mainLolz);
+				changePropListSearch(getTheSelected, locations);
+				InsertListViewItems(mainLolz, PropertiesListSearch.size());
+				HWND okButton = GetDlgItem(popupSearchWindow, IDC_BUTTON_SEARCH_OK2);
+				Button_Enable(okButton, TRUE);
+				return DLGC_WANTMESSAGE;
+			}
+			//return 0;
+		}
+	}
+
+
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
 //fgsdddddd
 //gsfdddddddddddddddsdgsdfg
 //Wow, searching, IN A WINDOW!!!!!!!!!
@@ -1274,6 +1442,7 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 	case WM_INITDIALOG:
 	{
+		popupSearchWindow = hDlg;
 		std::vector<LPWSTR> Bloxxer1Columns;
 		Bloxxer1Columns.push_back(L"Item #");
 		Bloxxer1Columns.push_back(L"First Value");
@@ -1294,6 +1463,7 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		selectedSearchItem = -1;
 		selectedSearchProp = -1;
 		isSearchGood = FALSE;
+		SetWindowSubclass(theSearchList1, ListViewReturnWindowProc, IDSC_MAIN_LISTRETURNDIALOG, 1);
 		return (INT_PTR)TRUE;
 	}
 	case WM_SIZE:
@@ -1605,35 +1775,35 @@ INT_PTR CALLBACK SearchWindow(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 					return TRUE;
 					break;
 				}
-				case NM_RETURN: {
+				//case WM_KEYDOWN: {
+				//	if (wParam == VK_RETURN) {
+				//		LPNMHDR lpnmh = (LPNMHDR)lParam;
+				//		switch (lpnmh->idFrom)
+				//		{
+				//		case IDC_SEARCHLIST1:
+				//		{
 
-					LPNMHDR lpnmh = (LPNMHDR)lParam;
-					switch (lpnmh->idFrom)
-					{
-					case IDC_SEARCHLIST1:
-					{
+				//			HWND lolList = GetDlgItem(hDlg, IDC_SEARCHLIST1);
+				//			int getTheSelected = ListView_GetSelectionMark(lolList);
+				//			if (getTheSelected > -1) {
 
-						HWND lolList = GetDlgItem(hDlg, IDC_SEARCHLIST1);
-						int getTheSelected = ListView_GetSelectionMark(lolList);
-						if (getTheSelected > -1) {
-
-							selectedSearchItem = locations[getTheSelected];
-							HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
-							ListView_DeleteAllItems(mainLolz);
-							changePropListSearch(getTheSelected, locations);
-							InsertListViewItems(mainLolz, PropertiesListSearch.size());
-							HWND okButton = GetDlgItem(hDlg, IDC_BUTTON_SEARCH_OK2);
-							Button_Enable(okButton, TRUE);
-						}
-						break;
-					}
-					default:
-						break;
-					}
-
-					return TRUE;
-					//break;
-				}
+				//				selectedSearchItem = locations[getTheSelected];
+				//				HWND mainLolz = GetDlgItem(hDlg, IDC_SEARCHLIST2);
+				//				ListView_DeleteAllItems(mainLolz);
+				//				changePropListSearch(getTheSelected, locations);
+				//				InsertListViewItems(mainLolz, PropertiesListSearch.size());
+				//				HWND okButton = GetDlgItem(hDlg, IDC_BUTTON_SEARCH_OK2);
+				//				Button_Enable(okButton, TRUE);
+				//			}
+				//			break;
+				//		}
+				//		default:
+				//			break;
+				//		}
+				//	}
+				//	return TRUE;
+				//	//break;
+				//}
 				return DefWindowProc(hDlg, message, wParam, lParam);
 				}
 				break;
