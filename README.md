@@ -1,4 +1,4 @@
 # Info-File-Reader
 It will read all types of info files from Luigi's Mansion.
-I will make it GUI based, since text files will have too many files to go through at once.
-I will also add an editable documentation to use, for certain value types. (Explaining which is a string, float, int, etc.)
+It can edit “info files” for Luigi’s Mansion. Also works with “path files” (NOT .pth) Some examples that this tool can do is move around furniture, create custom events, set ghost spawns, etc.
+Editable documentation to used for certain value types to explain which is a string, float, int, etc.
